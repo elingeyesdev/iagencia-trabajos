@@ -28,7 +28,7 @@ class RegisteredUserController extends Controller
      *
      * @throws ValidationException
      */
-   public function store(Request $request): RedirectResponse
+  public function store(Request $request): RedirectResponse
 {
     $request->validate([
         'cedula'    => ['required', 'integer', 'unique:usuarios,cedula'],
@@ -39,6 +39,7 @@ class RegisteredUserController extends Controller
         'ciudad'    => ['nullable', 'string', 'max:100'],
         'fechanac'  => ['nullable', 'date'],
         'password'  => ['required', 'confirmed', Rules\Password::defaults()],
+        'rol'       => ['required', 'in:trabajador,contratador'],
     ]);
 
     $user = User::create([
@@ -51,6 +52,8 @@ class RegisteredUserController extends Controller
         'fechanac'   => $request->fechanac,
         'contrasena' => Hash::make($request->password),
     ]);
+
+    $user->assignRole($request->rol);
 
     event(new Registered($user));
     Auth::login($user);

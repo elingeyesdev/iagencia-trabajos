@@ -9,13 +9,14 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * Get the attributes that should be cast.
@@ -24,24 +25,24 @@ class User extends Authenticatable
      * @return array<string, string>
      */
 
-     protected $table = 'usuarios';
-    protected $primaryKey = 'cedula';
-    public $timestamps = false;
-    public $incrementing = false;
-    protected $keyType = 'int';
+    protected $table = 'usuarios';
+protected $primaryKey = 'id'; // ← id
+public $timestamps = false;
+public $incrementing = true;  // ← true
+protected $keyType = 'int';
 
-    protected $fillable = [
-        'cedula',
-        'nombre',
-        'email',
-        'contrasena',
-        'telefono',
-        'direccion',
-        'ciudad',
-        'fechanac',
-        'estado',
-        'id_rol',
-    ];
+protected $fillable = [
+    'cedula',
+    'nombre',
+    'email',
+    'contrasena',
+    'telefono',
+    'direccion',
+    'ciudad',
+    'fechanac',
+    'estado',
+    'rol_id',
+];
 
     protected $hidden = [
         'contrasena',

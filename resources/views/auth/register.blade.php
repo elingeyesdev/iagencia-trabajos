@@ -51,6 +51,37 @@
             <x-input-error :messages="$errors->get('fechanac')" class="mt-2" />
         </div>
 
+        <!-- ROL -->
+        <div class="mt-4">
+            <x-input-label :value="__('¿Cómo quieres unirte?')" />
+            <div class="mt-2 grid grid-cols-2 gap-3">
+
+                <label class="rol-option cursor-pointer">
+                    <input type="radio" name="rol" value="trabajador"
+                        class="hidden rol-radio"
+                        {{ old('rol') == 'trabajador' ? 'checked' : '' }}>
+                    <div class="rol-card flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 transition-all duration-200 hover:border-red-500">
+                        <span class="text-3xl mb-2">🔧</span>
+                        <span class="font-semibold text-gray-700 dark:text-gray-300">Trabajador</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">Ofrece tus servicios</span>
+                    </div>
+                </label>
+
+                <label class="rol-option cursor-pointer">
+                    <input type="radio" name="rol" value="contratador"
+                        class="hidden rol-radio"
+                        {{ old('rol') == 'contratador' ? 'checked' : '' }}>
+                    <div class="rol-card flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 transition-all duration-200 hover:border-red-500">
+                        <span class="text-3xl mb-2">💼</span>
+                        <span class="font-semibold text-gray-700 dark:text-gray-300">Contratador</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">Publica trabajos</span>
+                    </div>
+                </label>
+
+            </div>
+            <x-input-error :messages="$errors->get('rol')" class="mt-2" />
+        </div>
+
         <!-- Password -->
         <div class="mt-4">
             <x-input-label for="password" :value="__('Contraseña')" />
@@ -66,7 +97,8 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
+            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
+                href="{{ route('login') }}">
                 {{ __('¿Ya tienes cuenta?') }}
             </a>
             <x-primary-button class="ms-4">
@@ -74,4 +106,15 @@
             </x-primary-button>
         </div>
     </form>
+
+    <style>
+        .rol-radio:checked + .rol-card {
+            border-color: #dc2626;
+            background-color: rgba(220, 38, 38, 0.05);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+        }
+        .rol-radio:checked + .rol-card span.font-semibold {
+            color: #dc2626;
+        }
+    </style>
 </x-guest-layout>
