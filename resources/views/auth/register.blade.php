@@ -115,6 +115,6 @@
         }
         .rol-radio:checked + .rol-card span.font-semibold {
             color: #dc2626;
-        }
+        }    
     </style>
 </x-guest-layout>
