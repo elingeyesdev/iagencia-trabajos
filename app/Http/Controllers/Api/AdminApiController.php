@@ -1,0 +1,144 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
+
+class AdminApiController extends Controller
+{
+   public function dashboard()
+{
+    return response()->json([
+        'total_usuarios'      => User::count(),
+        'total_publicaciones' => \DB::table('publicaciones')->count(),
+        'total_roles'         => Role::count(),
+        'usuarios_recientes'  => User::with('roles')->orderBy('id', 'desc')->take(5)->get(),
+    ]);
+}
+
+    public function usuarios()
+    {
+        return response()->json(User::with('roles')->get());
+    }
+
+    public function storeUsuario(Request $request)
+    {
+        $request->validate([
+            'nombre'   => 'required|string|max:100',
+            'cedula'   => 'required|integer|unique:usuarios,cedula',
+            'email'    => 'required|email|unique:usuarios,email',
+            'password' => 'required|min:8',
+            'ciudad'   => 'nullable|string|max:100',
+        ]);
+
+        $user = User::create([
+            'nombre'     => $request->nombre,
+            'cedula'     => $request->cedula,
+            'email'      => $request->email,
+            'contrasena' => Hash::make($request->password),
+            'ciudad'     => $request->ciudad,
+            'estado'     => 1,
+        ]);
+
+        if ($request->rol) {
+            $user->assignRole($request->rol);
+        }
+
+        return response()->json([
+            'message' => 'Usuario creado correctamente.',
+            'data'    => $user->load('roles')
+        ], 201);
+    }
+
+    public function updateUsuario(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'nombre' => 'required|string|max:100',
+            'email'  => 'required|email|unique:usuarios,email,' . $id,
+            'ciudad' => 'nullable|string|max:100',
+            'estado' => 'required|in:0,1',
+        ]);
+
+        $user->update([
+            'nombre' => $request->nombre,
+            'email'  => $request->email,
+            'ciudad' => $request->ciudad,
+            'estado' => $request->estado,
+        ]);
+
+        return response()->json([
+            'message' => 'Usuario actualizado.',
+            'data'    => $user->load('roles')
+        ]);
+    }
+
+    public function destroyUsuario($id)
+{
+    $user = User::findOrFail($id);
+    $user->update(['estado' => 0]);
+
+    return response()->json([
+        'message' => 'Usuario desactivado correctamente.'
+    ]);
+}
+
+    public function roles()
+    {
+        return response()->json(Role::withCount('users')->get());
+    }
+
+    public function asignarRol(Request $request)
+    {
+        $request->validate([
+            'usuario_id' => 'required|exists:usuarios,id',
+            'rol'        => 'required|exists:roles,name',
+        ]);
+
+        $user = User::findOrFail($request->usuario_id);
+        $user->syncRoles([$request->rol]);
+
+        return response()->json([
+            'message' => "Rol '{$request->rol}' asignado a {$user->nombre}."
+        ]);
+    }
+
+    public function quitarRol(Request $request)
+    {
+        $user = User::findOrFail($request->usuario_id);
+        $user->roles()->detach();
+
+        return response()->json([
+            'message' => "Rol removido de {$user->nombre}."
+        ]);
+    }
+    public function storeRol(Request $request)
+{
+    $request->validate(['name' => 'required|string|unique:roles,name|max:50']);
+    $rol = Role::create(['name' => strtolower($request->name), 'guard_name' => 'web']);
+    return response()->json(['message' => 'Rol creado.', 'data' => $rol], 201);
+}
+
+public function updateRol(Request $request, $id)
+{
+    $rol = Role::findOrFail($id);
+    $request->validate(['name' => 'required|string|unique:roles,name,'.$id.'|max:50']);
+    $rol->update(['name' => strtolower($request->name)]);
+    return response()->json(['message' => 'Rol actualizado.', 'data' => $rol]);
+}
+
+public function destroyRol($id)
+{
+    $rol = Role::findOrFail($id);
+    if (in_array($rol->name, ['administrador', 'trabajador', 'contratador'])) {
+        return response()->json(['message' => 'No se puede eliminar un rol del sistema.'], 403);
+    }
+    $rol->delete();
+    return response()->json(['message' => 'Rol eliminado.']);
+}
+}
