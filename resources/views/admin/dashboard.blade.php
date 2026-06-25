@@ -414,14 +414,16 @@
                 <span class="nav-item-icon">🏠</span> Inicio
             </a>
             <a class="nav-item" onclick="showPanel('usuarios')" href="#">
-                <span class="nav-item-icon">👥</span> Usuarios
-            </a>
-            <a class="nav-item" onclick="showPanel('roles')" href="#">
-                <span class="nav-item-icon">🛡️</span> Roles
-            </a>
-            <a class="nav-item" onclick="showPanel('asignar-rol')" href="#">
-                <span class="nav-item-icon">🔗</span> Asignar Rol
-            </a>
+    <span class="nav-item-icon">👥</span> Administrar Usuario
+</a>
+
+<a class="nav-item" onclick="showPanel('roles')" href="#">
+    <span class="nav-item-icon">🛡️</span> Administrar Rol
+</a>
+
+<a class="nav-item" onclick="showPanel('asignar-rol')" href="#">
+    <span class="nav-item-icon">🔗</span> Administrar Asignación de Rol
+</a>
         </div>
     </div>
 
@@ -434,12 +436,13 @@
             <span class="nav-group-arrow">▶</span>
         </div>
         <div class="nav-group-items">
-            <a class="nav-item" href="#"><span class="nav-item-icon">💼</span> Trabajos</a>
-            <a class="nav-item" href="#"><span class="nav-item-icon">👷</span> Usuarios</a>
-            <a class="nav-item" href="#"><span class="nav-item-icon">🏢</span> Categorias</a>
-            <a class="nav-item" href="#"><span class="nav-item-icon">📋</span> Publicaciones</a>
-            <a class="nav-item" href="#"><span class="nav-item-icon">💳</span> Pagos</a>
-        </div>
+    <a class="nav-item" onclick="showPanel('categorias')" href="#">
+    <span class="nav-item-icon">🏢</span> Administrar Categorías
+</a>
+<a class="nav-item" onclick="showPanel('publicaciones')" href="#">
+    <span class="nav-item-icon">💼</span> Administrar Publicaciones
+</a>
+</div>
     </div>
 
     <div class="sidebar-divider"></div>
@@ -793,6 +796,74 @@
         </div>
     </div>
 
+<!-- ════ PANEL: CATEGORÍAS ════ -->
+<div class="panel" id="panel-categorias">
+    <div class="page-header">
+        <div>
+            <div class="page-title">🏢 Categorías</div>
+            <div class="page-breadcrumb">Admin / <span>Parametrización</span> / Categorías</div>
+        </div>
+        <button class="btn btn-accent" onclick="openModal('modal-categoria')">+ Nueva Categoría</button>
+    </div>
+    <div class="toolbar">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Buscar categoría..." oninput="filterTable('tabla-categorias', this.value)">
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table id="tabla-categorias">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-categorias">
+                <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Cargando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ════ PANEL: PUBLICACIONES ════ -->
+<div class="panel" id="panel-publicaciones">
+    <div class="page-header">
+        <div>
+            <div class="page-title">💼 Publicaciones</div>
+            <div class="page-breadcrumb">Admin / <span>Parametrización</span> / Publicaciones</div>
+        </div>
+        <button class="btn btn-accent" onclick="openModal('modal-publicacion')">+ Nueva Publicación</button>
+    </div>
+    <div class="toolbar">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Buscar publicación..." oninput="filterTable('tabla-publicaciones', this.value)">
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table id="tabla-publicaciones">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Título</th>
+                    <th>Tipo</th>
+                    <th>Pago</th>
+                    <th>Lugar</th>
+                    <th>Categoría</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-publicaciones">
+                <tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Cargando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 </div><!-- /content -->
 </div><!-- /main -->
 
@@ -918,6 +989,100 @@
         </div>
     </div>
 </div>
+<!-- MODAL CATEGORIA -->
+<div class="modal-overlay" id="modal-categoria">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title" id="modal-categoria-title">Nueva Categoría</div>
+            <span class="modal-close" onclick="closeModal('modal-categoria')">✕</span>
+        </div>
+        <input type="hidden" id="categoria-id">
+        <div class="form-group">
+            <label class="form-label">Nombre</label>
+            <input class="form-input" type="text" id="cat-nombre" placeholder="ej: Electricidad">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-input" id="cat-descripcion" placeholder="Descripción de la categoría..." rows="3" style="resize:vertical;"></textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Estado</label>
+            <select class="form-select" id="cat-estado">
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('modal-categoria')">Cancelar</button>
+            <button class="btn btn-accent" onclick="guardarCategoria()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PUBLICACION -->
+<div class="modal-overlay" id="modal-publicacion">
+    <div class="modal" style="max-width:560px;">
+        <div class="modal-header">
+            <div class="modal-title" id="modal-publicacion-title">Nueva Publicación</div>
+            <span class="modal-close" onclick="closeModal('modal-publicacion')">✕</span>
+        </div>
+        <input type="hidden" id="pub-id">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+            <div class="form-group">
+                <label class="form-label">Título</label>
+                <input class="form-input" type="text" id="pub-titulo" placeholder="Título del trabajo">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" id="pub-tipo">
+                    <option value="recurrente">Recurrente</option>
+                    <option value="temporal">Temporal</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-input" id="pub-descripcion" placeholder="Describe el trabajo..." rows="3" style="resize:vertical;"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+            <div class="form-group">
+                <label class="form-label">Pago (Bs)</label>
+                <input class="form-input" type="number" id="pub-pago" placeholder="350">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Lugar</label>
+                <input class="form-input" type="text" id="pub-lugar" placeholder="Santa Cruz">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <select class="form-select" id="pub-categoria">
+                <option value="">Cargando...</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('modal-publicacion')">Cancelar</button>
+            <button class="btn btn-accent" onclick="guardarPublicacion()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMAR ELIMINAR CATEGORIA/PUBLICACION -->
+<div class="modal-overlay" id="modal-eliminar-item">
+    <div class="modal" style="max-width:380px;">
+        <div class="modal-header">
+            <div class="modal-title" style="color:#ff7070;">⚠️ Confirmar</div>
+            <span class="modal-close" onclick="closeModal('modal-eliminar-item')">✕</span>
+        </div>
+        <p style="color:var(--text-soft);font-size:.88rem;margin-bottom:1rem;">
+            ¿Eliminar <strong id="eliminar-item-nombre" style="color:white;"></strong>?
+        </p>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('modal-eliminar-item')">Cancelar</button>
+            <button class="btn btn-red" onclick="ejecutarEliminarItem()">🗑️ Eliminar</button>
+        </div>
+    </div>
+</div></div>
 <script>
     const TOKEN = document.querySelector('meta[name="api-token"]').content;
 
@@ -1203,7 +1368,175 @@ async function ejecutarEliminarRol() {
             if (!d.contains(e.target)) d.classList.remove('open');
         });
     });
+// ══ CATEGORÍAS ══
+let eliminarItemId = null, eliminarItemTipo = null;
 
+async function cargarCategorias() {
+    try {
+        const res = await fetch('/api/admin/categorias', {
+            headers: { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        const tbody = document.getElementById('tbody-categorias');
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Sin categorías.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(c => `
+            <tr>
+                <td>${c.id_categoria}</td>
+                <td class="name">${c.nombre_categoria}</td>
+                <td style="color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.descripcion ?? '—'}</td>
+                <td>${c.estado ? '<span class="chip chip-green">Activo</span>' : '<span class="chip chip-red">Inactivo</span>'}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="icon-btn" onclick="editarCategoria(${c.id_categoria},'${c.nombre_categoria?.replace(/'/g,"\\'")}','${c.descripcion?.replace(/'/g,"\\'") ?? ''}',${c.estado})">✏️</button>
+                        <button class="icon-btn del" onclick="confirmarEliminarItem(${c.id_categoria},'${c.nombre_categoria}','categoria')">🗑️</button>
+                    </div>
+                </td>
+            </tr>`).join('');
+        // También llenar select de publicación
+        const selCat = document.getElementById('pub-categoria');
+        if (selCat) {
+            selCat.innerHTML = '<option value="">— Seleccione —</option>';
+            data.forEach(c => selCat.innerHTML += `<option value="${c.id_categoria}">${c.nombre_categoria}</option>`);
+        }
+    } catch(e) { console.log('Error categorías:', e); }
+}
+
+function editarCategoria(id, nombre, desc, estado) {
+    document.getElementById('modal-categoria-title').textContent = 'Editar Categoría';
+    document.getElementById('categoria-id').value = id;
+    document.getElementById('cat-nombre').value = nombre;
+    document.getElementById('cat-descripcion').value = desc;
+    document.getElementById('cat-estado').value = estado;
+    openModal('modal-categoria');
+}
+
+async function guardarCategoria() {
+    const id = document.getElementById('categoria-id').value;
+    const body = {
+        nombre_categoria: document.getElementById('cat-nombre').value,
+        descripcion:      document.getElementById('cat-descripcion').value,
+        estado:           document.getElementById('cat-estado').value,
+    };
+    const url    = id ? `/api/admin/categorias/${id}` : '/api/admin/categorias';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+        method,
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (res.ok) {
+        toast(data.message || 'Guardado.');
+        closeModal('modal-categoria');
+        document.getElementById('categoria-id').value = '';
+        document.getElementById('modal-categoria-title').textContent = 'Nueva Categoría';
+        cargarCategorias();
+    } else {
+        const errores = Object.values(data.errors || {}).flat().join(' | ');
+        toast(errores || data.message || 'Error.', 'error');
+    }
+}
+
+// ══ PUBLICACIONES ══
+async function cargarPublicaciones() {
+    try {
+        const res = await fetch('/api/admin/publicaciones', {
+            headers: { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        const tbody = document.getElementById('tbody-publicaciones');
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Sin publicaciones.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(p => `
+            <tr>
+                <td>${p.id_labor}</td>
+                <td class="name">${p.titulo}</td>
+                <td><span class="chip chip-blue">${p.tipo}</span></td>
+                <td style="color:var(--accent);font-family:'Bebas Neue',cursive;font-size:1.1rem;">Bs ${p.pago}</td>
+                <td>${p.lugar}</td>
+                <td>${p.categoria?.nombre_categoria ?? '—'}</td>
+                <td>${p.estado ? '<span class="chip chip-green">Activo</span>' : '<span class="chip chip-red">Inactivo</span>'}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="icon-btn" onclick="editarPublicacion(${JSON.stringify(p).replace(/"/g,'&quot;')})">✏️</button>
+                        <button class="icon-btn del" onclick="confirmarEliminarItem(${p.id_labor},'${p.titulo?.replace(/'/g,"\\'")}','publicacion')">🗑️</button>
+                    </div>
+                </td>
+            </tr>`).join('');
+    } catch(e) { console.log('Error publicaciones:', e); }
+}
+
+function editarPublicacion(p) {
+    if (typeof p === 'string') p = JSON.parse(p.replace(/&quot;/g,'"'));
+    document.getElementById('modal-publicacion-title').textContent = 'Editar Publicación';
+    document.getElementById('pub-id').value = p.id_labor;
+    document.getElementById('pub-titulo').value = p.titulo;
+    document.getElementById('pub-tipo').value = p.tipo;
+    document.getElementById('pub-descripcion').value = p.descripcion;
+    document.getElementById('pub-pago').value = p.pago;
+    document.getElementById('pub-lugar').value = p.lugar;
+    document.getElementById('pub-categoria').value = p.id_categoria;
+    openModal('modal-publicacion');
+}
+
+async function guardarPublicacion() {
+    const id = document.getElementById('pub-id').value;
+    const body = {
+        titulo:       document.getElementById('pub-titulo').value,
+        tipo:         document.getElementById('pub-tipo').value,
+        descripcion:  document.getElementById('pub-descripcion').value,
+        pago:         document.getElementById('pub-pago').value,
+        lugar:        document.getElementById('pub-lugar').value,
+        id_categoria: document.getElementById('pub-categoria').value,
+    };
+    const url    = id ? `/api/admin/publicaciones/${id}` : '/api/admin/publicaciones';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+        method,
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (res.ok) {
+        toast(data.message || 'Guardado.');
+        closeModal('modal-publicacion');
+        document.getElementById('pub-id').value = '';
+        cargarPublicaciones();
+    } else {
+        const errores = Object.values(data.errors || {}).flat().join(' | ');
+        toast(errores || data.message || 'Error.', 'error');
+    }
+}
+
+function confirmarEliminarItem(id, nombre, tipo) {
+    eliminarItemId = id;
+    eliminarItemTipo = tipo;
+    document.getElementById('eliminar-item-nombre').textContent = nombre;
+    openModal('modal-eliminar-item');
+}
+
+async function ejecutarEliminarItem() {
+    const url = eliminarItemTipo === 'categoria'
+        ? `/api/admin/categorias/${eliminarItemId}`
+        : `/api/admin/publicaciones/${eliminarItemId}`;
+    const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/json' }
+    });
+    const data = await res.json();
+    if (res.ok) {
+        toast(data.message || 'Eliminado.');
+        closeModal('modal-eliminar-item');
+        eliminarItemTipo === 'categoria' ? cargarCategorias() : cargarPublicaciones();
+    } else {
+        toast(data.message || 'Error.', 'error');
+    }
+}
     // ── Cargar roles en todos los selects dinámicamente ──
 async function cargarTodosRoles() {
     try {
@@ -1239,13 +1572,18 @@ async function cargarTodosRoles() {
                 selects[1].innerHTML += `<option value="${r.name}">${r.name.charAt(0).toUpperCase() + r.name.slice(1)}</option>`;
             });
         }
+        
     } catch(e) {
         console.log('Error cargando roles:', e);
     }
 }
 
-// ── Init ──
-cargarTodosRoles();
+// ── Init: todo en paralelo ──
+Promise.all([
+    cargarTodosRoles(),
+    cargarCategorias(),
+    cargarPublicaciones()
+]);
 </script>
 
 </body>

@@ -5,7 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UsuarioApiController;
 use App\Http\Controllers\Api\AdminApiController;
-
+use App\Http\Controllers\Api\CategoriaApiController;
+use App\Http\Controllers\Api\PublicacionApiController;
 /*****************************************************
  * Rutas API
  *****************************************************/
@@ -40,5 +41,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/roles',        [AdminApiController::class, 'storeRol']);
         Route::put('/roles/{id}',    [AdminApiController::class, 'updateRol']);
         Route::delete('/roles/{id}', [AdminApiController::class, 'destroyRol']);
+        // Categorías
+Route::get('/categorias',          [CategoriaApiController::class, 'index']);
+Route::post('/categorias',         [CategoriaApiController::class, 'store']);
+Route::put('/categorias/{id}',     [CategoriaApiController::class, 'update']);
+Route::delete('/categorias/{id}',  [CategoriaApiController::class, 'destroy']);
+
+// Publicaciones
+Route::get('/publicaciones',         [PublicacionApiController::class, 'index']);
+Route::post('/publicaciones',        [PublicacionApiController::class, 'store']);
+Route::put('/publicaciones/{id}',    [PublicacionApiController::class, 'update']);
+Route::delete('/publicaciones/{id}', [PublicacionApiController::class, 'destroy']);
     });
 });

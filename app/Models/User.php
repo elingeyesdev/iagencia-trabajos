@@ -27,7 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
 
     protected $table = 'usuarios';
-protected $primaryKey = 'id'; // ← id
+protected $primaryKey = 'cedula'; // ← id
 public $timestamps = false;
 public $incrementing = true;  // ← true
 protected $keyType = 'int';

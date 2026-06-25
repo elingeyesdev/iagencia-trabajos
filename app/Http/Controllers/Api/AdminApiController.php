@@ -89,9 +89,15 @@ class AdminApiController extends Controller
 }
 
     public function roles()
-    {
-        return response()->json(Role::withCount('users')->get());
-    }
+{
+    $roles = Role::all()->map(function ($role) {
+        $role->users_count = \DB::table('model_has_roles')
+            ->where('role_id', $role->id)
+            ->count();
+        return $role;
+    });
+    return response()->json($roles);
+}
 
     public function asignarRol(Request $request)
     {
