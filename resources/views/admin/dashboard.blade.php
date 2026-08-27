@@ -593,7 +593,7 @@
                 <tbody>
                     @foreach(\App\Models\User::with('roles')->get() as $u)
                     <tr data-rol="{{ $u->roles->first()?->name ?? '' }}">
-                        <td>{{ $u->id }}</td>
+                        <td>{{ $loop->iteration }}</td>
                         <td class="name">{{ $u->nombre }}</td>
                         <td>{{ $u->email }}</td>
                         <td>{{ $u->cedula }}</td>
@@ -629,9 +629,9 @@
                         </td>
                         <td>
                             <div class="action-btns">
-                                <button class="icon-btn" title="Ver" onclick="verUsuario({{ $u->id }})">👁️</button>
-                                <button class="icon-btn" title="Editar" onclick="editarUsuario({{ $u->id }}, '{{ $u->nombre }}', '{{ $u->email }}', '{{ $u->ciudad }}', '{{ $u->estado }}')">✏️</button>
-                                <button class="icon-btn del" title="Eliminar" onclick="confirmarEliminar({{ $u->id }}, '{{ $u->nombre }}', 'usuario')">🗑️</button>
+                                <button class="icon-btn" title="Ver" onclick="verUsuario({{ $u->cedula }})">👁️</button>
+                                <button class="icon-btn" title="Editar" onclick="editarUsuario({{ $u->cedula }}, {{ \Illuminate\Support\Js::from($u->nombre) }}, {{ \Illuminate\Support\Js::from($u->email) }}, {{ \Illuminate\Support\Js::from($u->ciudad) }}, {{ \Illuminate\Support\Js::from($u->estado) }}, {{ \Illuminate\Support\Js::from($u->roles->first()?->name ?? '') }})">✏️</button>
+                                <button class="icon-btn del" title="Eliminar" onclick="confirmarEliminar({{ $u->cedula }}, {{ \Illuminate\Support\Js::from($u->nombre) }}, 'usuario')">🗑️</button>
                             </div>
                         </td>
                     </tr>
@@ -695,9 +695,9 @@
                     <td>{{ $r->created_at?->format('d/m/Y') ?? '—' }}</td>
                     <td>
                         <div class="action-btns">
-                            <button class="icon-btn" title="Ver usuarios" onclick="verUsuariosRol('{{ $r->name }}')">👥</button>
-                            <button class="icon-btn edit" title="Editar" onclick="editarRol({{ $r->id }}, '{{ $r->name }}')">✏️</button>
-                            <button class="icon-btn del" title="Eliminar" onclick="confirmarEliminarRol({{ $r->id }}, '{{ $r->name }}')">🗑️</button>
+                            <button class="icon-btn" title="Ver usuarios" onclick="verUsuariosRol({{ \Illuminate\Support\Js::from($r->name) }})">👥</button>
+                            <button class="icon-btn edit" title="Editar" onclick="editarRol({{ $r->id }}, {{ \Illuminate\Support\Js::from($r->name) }})">✏️</button>
+                            <button class="icon-btn del" title="Eliminar" onclick="confirmarEliminarRol({{ $r->id }}, {{ \Illuminate\Support\Js::from($r->name) }})">🗑️</button>
                         </div>
                     </td>
                 </tr>
@@ -728,7 +728,7 @@
                         <select class="form-select">
                             <option value="">— Seleccione usuario —</option>
                             @foreach(\App\Models\User::orderBy('nombre')->get() as $u)
-                            <option value="{{ $u->id }}">{{ $u->nombre }} ({{ $u->email }})</option>
+                            <option value="{{ $u->cedula }}">{{ $u->nombre }} ({{ $u->email }})</option>
                             @endforeach
                         </select>
                     </div>
@@ -786,7 +786,7 @@
 <span class="chip {{ $chipColor }}">{{ $chipIcon }} {{ $r ? ucfirst($r) : 'Sin rol' }}</span>
                             </td>
                             <td>
-                                <button class="icon-btn" title="Cambiar rol" onclick="editarRolUsuario({{ $u->id }}, '{{ $u->nombre }}')">✏️</button>
+                                <button class="icon-btn" title="Cambiar rol" onclick="editarRolUsuario({{ $u->cedula }}, {{ \Illuminate\Support\Js::from($u->nombre) }})">✏️</button>
                             </td>
                         </tr>
                         @endforeach
@@ -900,7 +900,7 @@
                     <select class="form-select" id="f-estado">
                         <option value="1">Activo</option>
                         <option value="0">Inactivo</option>
-                    </  select>
+                    </select>
                 </div>
             </div>
             <div class="form-group" id="grupo-password">
@@ -1178,13 +1178,15 @@ async function cargarUsuarios() {
     }
 
     // ── Editar usuario ──
-    function editarUsuario(id, nombre, email, ciudad, estado) {
+    function editarUsuario(id, nombre, email, ciudad, estado, rol) {
         document.getElementById('modal-usuario-title').textContent = 'Editar Usuario';
         document.getElementById('usuario-id').value = id;
         document.getElementById('f-nombre').value = nombre;
         document.getElementById('f-email').value = email;
+        document.getElementById('f-cedula').value = id;
         document.getElementById('f-ciudad').value = ciudad === '—' ? '' : ciudad;
         document.getElementById('f-estado').value = estado;
+        document.getElementById('f-rol').value = rol || '';
         document.getElementById('grupo-password').style.display = 'none';
         openModal('modal-usuario');
     }

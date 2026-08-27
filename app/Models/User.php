@@ -29,7 +29,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $table = 'usuarios';
 protected $primaryKey = 'cedula'; // ← id
 public $timestamps = false;
-public $incrementing = true;  // ← true
+public $incrementing = false;
 protected $keyType = 'int';
 
 protected $fillable = [
@@ -60,4 +60,3 @@ protected $fillable = [
         return $this->contrasena;
     }
 }
-

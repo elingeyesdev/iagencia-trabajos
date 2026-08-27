@@ -16,7 +16,7 @@ class AdminApiController extends Controller
         'total_usuarios'      => User::count(),
         'total_publicaciones' => \DB::table('publicaciones')->count(),
         'total_roles'         => Role::count(),
-        'usuarios_recientes'  => User::with('roles')->orderBy('id', 'desc')->take(5)->get(),
+        'usuarios_recientes'  => User::with('roles')->orderBy('fecha_registro', 'desc')->take(5)->get(),
     ]);
 }
 
@@ -60,21 +60,54 @@ class AdminApiController extends Controller
 
         $request->validate([
             'nombre' => 'required|string|max:100',
-            'email'  => 'required|email|unique:usuarios,email,' . $id,
+            'email'  => 'required|email|unique:usuarios,email,' . $id . ',cedula',
+            'cedula' => 'required|integer|unique:usuarios,cedula,' . $id . ',cedula',
             'ciudad' => 'nullable|string|max:100',
             'estado' => 'required|in:0,1',
+            'rol'    => 'nullable|string|exists:roles,name',
         ]);
 
-        $user->update([
-            'nombre' => $request->nombre,
-            'email'  => $request->email,
-            'ciudad' => $request->ciudad,
-            'estado' => $request->estado,
-        ]);
+        $cedulaAnterior = $user->cedula;
+        $cedulaNueva    = (int) $request->cedula;
+
+        \DB::transaction(function () use ($user, $request, $cedulaAnterior, $cedulaNueva) {
+            $user->update([
+                'nombre' => $request->nombre,
+                'email'  => $request->email,
+                'cedula' => $cedulaNueva,
+                'ciudad' => $request->ciudad,
+                'estado' => $request->estado,
+            ]);
+
+            // La cédula es la PK y no tiene FK real en BD: si cambió,
+            // hay que propagar el nuevo valor a las tablas relacionadas
+            // para no dejar registros huérfanos.
+            if ($cedulaNueva !== $cedulaAnterior) {
+                \DB::table('publicaciones')
+                    ->where('cedula', $cedulaAnterior)
+                    ->update(['cedula' => $cedulaNueva]);
+
+                \DB::table('model_has_roles')
+                    ->where('model_type', User::class)
+                    ->where('model_id', $cedulaAnterior)
+                    ->update(['model_id' => $cedulaNueva]);
+
+                \DB::table('personal_access_tokens')
+                    ->where('tokenable_type', User::class)
+                    ->where('tokenable_id', $cedulaAnterior)
+                    ->update(['tokenable_id' => $cedulaNueva]);
+            }
+        });
+
+        if ($request->filled('rol')) {
+            $user->syncRoles([$request->rol]);
+        } else {
+            $user->syncRoles([]);
+        }
 
         return response()->json([
             'message' => 'Usuario actualizado.',
-            'data'    => $user->load('roles')
+            'data'    => $user->fresh()->load('roles')
         ]);
     }
 
@@ -102,7 +135,7 @@ class AdminApiController extends Controller
     public function asignarRol(Request $request)
     {
         $request->validate([
-            'usuario_id' => 'required|exists:usuarios,id',
+            'usuario_id' => 'required|exists:usuarios,cedula',
             'rol'        => 'required|exists:roles,name',
         ]);
 
