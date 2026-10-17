@@ -21,7 +21,7 @@
             <img src="{{ asset('images/redwork-logo.png') }}" alt="RedWork Logo" class="logo-img">
         </div>
         <span class="admin-badge">⚙️ Admin</span>
-    </div>
+    </div>x
     <div class="topbar-right">
         <div class="notif-btn" title="Notificaciones">🔔<span class="notif-dot"></span></div>
         <div class="dropdown" onclick="this.classList.toggle('open')">
