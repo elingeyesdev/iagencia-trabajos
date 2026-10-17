@@ -72,4 +72,23 @@ class UsuarioApiController extends Controller
             'message' => 'Usuario eliminado'
         ]);
     }
+    public function actualizarPerfil(Request $request)
+{
+    $user = $request->user();
+
+    $request->validate([
+        'nombre'    => 'required|string|max:200',
+        'email'     => 'required|email|max:150|unique:usuarios,email,' . $user->cedula . ',cedula',
+        'telefono'  => 'nullable|string|max:20',
+        'ciudad'    => 'nullable|string|max:100',
+        'direccion' => 'nullable|string|max:200',
+    ]);
+
+    $user->update($request->only(['nombre', 'email', 'telefono', 'ciudad', 'direccion']));
+
+    return response()->json([
+        'message' => 'Perfil actualizado exitosamente.',
+        'user'    => $user
+    ]);
+}
 }

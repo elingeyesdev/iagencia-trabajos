@@ -79,9 +79,7 @@ class AdminApiController extends Controller
                 'estado' => $request->estado,
             ]);
 
-            // La cédula es la PK y no tiene FK real en BD: si cambió,
-            // hay que propagar el nuevo valor a las tablas relacionadas
-            // para no dejar registros huérfanos.
+            
             if ($cedulaNueva !== $cedulaAnterior) {
                 \DB::table('publicaciones')
                     ->where('cedula', $cedulaAnterior)

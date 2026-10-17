@@ -31,4 +31,9 @@ class Publicacion extends Model
     {
         return $this->belongsTo(User::class, 'cedula', 'cedula');
     }
+
+    public function postulaciones()
+    {
+        return $this->hasMany(Postulacion::class, 'id_labor', 'id_labor');
+    }
 }
