@@ -59,10 +59,10 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options'     => [
-        \PDO::ATTR_PERSISTENT => true,  // reutiliza conexiones
-    ],
-],
+            'options'    => [
+                \PDO::ATTR_PERSISTENT => false,  // Desactivado para liberar conexiones en FreeDB
+            ],
+        ],
 
         'mariadb' => [
             'driver' => 'mariadb',
