@@ -589,7 +589,6 @@ p.type==="password"
 
 </script>
 
-<<<<<<< HEAD
     <style>
         .rol-radio:checked + .rol-card {
             border-color: #dc2626;
@@ -600,6 +599,5 @@ p.type==="password"
             color: #dc2626;
         }    
     </style>
-=======
->>>>>>> login-y-reg-mejorado
+
 </x-guest-layout>
