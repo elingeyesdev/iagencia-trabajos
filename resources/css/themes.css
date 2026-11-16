@@ -1,0 +1,306 @@
+/*
+ * RedWork — Temas claro y oscuro (compartido por administrador, Business Intelligence, contratador y trabajador).
+ *
+ * TEMA OSCURO: es el diseño original y el predeterminado. Este archivo NO redefine ningún color oscuro:
+ *   los valores siguen en admin-dashboard.css, contratador-dashboard.css, trabajador-dashboard.css y
+ *   kpi-dashboard.css, por lo que el tema oscuro se ve exactamente igual que antes.
+ * TEMA CLARO: todo vive bajo html[data-theme="light"]:
+ *   1) Redefine las variables semánticas que ya usan los dashboards (--bg-main, --bg-card, --text-*, --border…).
+ *   2) Adapta las declaraciones que tenían colores escritos a mano (fondos rgba oscuros, textos "white"…).
+ *   3) Adapta estilos en línea generados por Blade/JS (selectores [style*=…]) y componentes dinámicos
+ *      (toasts, modales, dropdowns, gráficos SVG), que adoptan el tema aunque se creen después.
+ * El cambio de tema solo anima colores (nunca tamaños ni posiciones) y respeta prefers-reduced-motion.
+ */
+
+/* ══════════════════════ Interruptor «Cambiar tema» (ambos temas) ══════════════════════ */
+.theme-switch {
+    display: inline-flex; align-items: center; gap: .5rem; flex-shrink: 0;
+    background: transparent; border: 0; padding: .2rem; margin: 0; cursor: pointer;
+    font-family: 'Space Mono', monospace; font-size: .58rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text-soft, #94A3B8);
+    -webkit-tap-highlight-color: transparent;
+}
+.theme-switch-track {
+    position: relative; width: 46px; height: 24px; border-radius: 999px; flex-shrink: 0;
+    background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14);
+    transition: background-color .25s ease, border-color .25s ease;
+}
+.theme-switch-thumb {
+    position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: .66rem; line-height: 1;
+    background: #1E293B; box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+    transition: transform .25s ease, background-color .25s ease;
+}
+.theme-switch[aria-checked="true"] .theme-switch-thumb { transform: translateX(22px); }
+.theme-switch:hover .theme-switch-track { border-color: rgba(255, 255, 255, .28); }
+.theme-switch:focus-visible { outline: 2px solid var(--accent, #2DD4BF); outline-offset: 3px; border-radius: 999px; }
+.theme-switch-label { white-space: nowrap; }
+/* El encabezado del contratador solo tenía el avatar: se alinea en fila con el interruptor (ambos temas). */
+.rw-contratador .topbar-right { display: flex; align-items: center; gap: .8rem; }
+@media (max-width: 600px) {
+    /* En pantallas estrechas se conserva el icono ☀️/🌙; el texto sigue disponible para lectores de pantalla. */
+    .theme-switch-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    /* Encabezado del administrador: en móvil no cabía (interruptor, notificaciones y avatar quedaban fuera de pantalla). */
+    .rw-admin .admin-badge { display: none; }
+    .rw-admin .logo-img { height: 34px; }
+    .rw-admin .topbar { padding: 0 .75rem; }
+    .rw-admin .topbar-left, .rw-admin .topbar-right { gap: .5rem; }
+    .rw-contratador .logo-img { height: 34px; }
+    .rw-contratador .topbar-left, .rw-contratador .topbar-right { gap: .6rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .theme-switch-track, .theme-switch-thumb { transition: none; }
+}
+
+/* Transición suave SOLO de colores durante el cambio de tema (clase temporal que añade themes.js). */
+html.rw-theme-anim *, html.rw-theme-anim *::before, html.rw-theme-anim *::after {
+    transition-property: background-color, color, border-color, box-shadow, fill, stroke !important;
+    transition-duration: .25s !important;
+    transition-timing-function: ease !important;
+}
+
+/* ══════════════════════════════ TEMA CLARO ══════════════════════════════ */
+html[data-theme="light"] {
+    color-scheme: light;
+
+    /* Paleta clara (pasteles, sin neón) */
+    --rw-bg: #F7F9FC;
+    --rw-surface: #FFFFFF;
+    --rw-surface-2: #F3F6FA;
+    --rw-surface-3: #EAF0F6;
+    --rw-text: #24364A;
+    --rw-text-2: #4A5D72;
+    --rw-text-3: #64748B;
+    --rw-border: #DFE7EF;
+    --rw-border-2: #CBD7E3;
+    --rw-blue: #DCEBFA;   --rw-blue-ink: #1E5A96;
+    --rw-green: #DDF3E8;  --rw-green-ink: #17673F;
+    --rw-teal: #D9F2EF;   --rw-teal-ink: #0F6E66;
+    --rw-red: #FBE3E5;    --rw-red-ink: #B4232A;
+    --rw-yellow: #FFF1D7; --rw-yellow-ink: #8A5300;
+    --rw-shadow: 0 4px 16px rgba(36, 54, 74, .07);
+
+    /* Variables semánticas que ya consumen los dashboards */
+    --bg-main: var(--rw-bg);
+    --bg-card: var(--rw-surface);
+    --text-main: var(--rw-text);
+    --text-soft: var(--rw-text-2);
+    --text-muted: var(--rw-text-3);
+    --border: var(--rw-border);
+    --shadow-soft: var(--rw-shadow);
+    --primary: #E5484D;              /* rojo RedWork, sin efecto neón */
+    --primary-soft: var(--rw-red);
+    --accent: #0F8F84;               /* turquesa con contraste sobre blanco */
+    --gold: #B66A00;
+    --warning: #B66A00;
+    --success: #17803F;
+    --danger: #C9302C;
+    --shadow-red: 0 4px 14px rgba(229, 72, 77, .12);
+}
+
+/* ── Estructura: fondo, encabezado, menú lateral, logo ── */
+html[data-theme="light"] body { background: var(--rw-bg); color: var(--rw-text); }
+html[data-theme="light"] .topbar {
+    background: rgba(255, 255, 255, .96); border-bottom-color: var(--rw-border);
+    box-shadow: 0 1px 0 var(--rw-border), 0 4px 14px rgba(36, 54, 74, .04);
+}
+html[data-theme="light"] .logo-img { filter: none; }
+html[data-theme="light"] .sidebar { background: var(--rw-surface); border-right-color: var(--rw-border); }
+html[data-theme="light"] .sidebar::-webkit-scrollbar-thumb { background: var(--rw-border-2); }
+html[data-theme="light"] .menu-toggle, html[data-theme="light"] .notif-btn { background: var(--rw-surface-2); border-color: var(--rw-border); }
+html[data-theme="light"] .menu-toggle:hover, html[data-theme="light"] .notif-btn:hover { background: var(--rw-surface-3); }
+html[data-theme="light"] .menu-toggle span { background: var(--rw-text-2); }
+html[data-theme="light"] .menu-btn { color: var(--rw-text); background: var(--rw-surface-2); }
+html[data-theme="light"] .nav-group-header:hover { background: var(--rw-surface-2); }
+html[data-theme="light"] .nav-item:hover { background: var(--rw-surface-2); color: var(--rw-text); }
+html[data-theme="light"] .nav-item.active { background: var(--rw-red); color: var(--rw-red-ink); border-color: var(--primary); }
+html[data-theme="light"] .rw-contratador .nav-item.active { background: var(--rw-teal); color: var(--rw-teal-ink); border-left-color: var(--accent); }
+html[data-theme="light"] .sidebar-divider { background: var(--rw-border); }
+html[data-theme="light"] .avatar-btn { border-color: rgba(36, 54, 74, .12); color: #FFFFFF; }
+html[data-theme="light"] .rw-contratador .avatar-btn { color: #FFFFFF; }
+html[data-theme="light"] .btn-logout { background: var(--rw-red); border-color: #F3C4C8; color: var(--rw-red-ink); }
+html[data-theme="light"] .btn-logout:hover { background: #F7D2D6; color: var(--rw-red-ink); }
+
+/* Interruptor en tema claro */
+html[data-theme="light"] .theme-switch { color: var(--rw-text-2); }
+html[data-theme="light"] .theme-switch-track { background: var(--rw-yellow); border-color: #F1D59A; }
+html[data-theme="light"] .theme-switch:hover .theme-switch-track { border-color: #E2B65A; }
+html[data-theme="light"] .theme-switch-thumb { background: #FFFFFF; box-shadow: 0 1px 3px rgba(36, 54, 74, .25); }
+
+/* ── Dropdowns y menús contextuales ── */
+html[data-theme="light"] .dropdown-menu { background: var(--rw-surface); border-color: var(--rw-border); box-shadow: 0 10px 30px rgba(36, 54, 74, .12); }
+html[data-theme="light"] .dropdown-item { border-bottom-color: var(--rw-border); color: var(--rw-text-2); }
+html[data-theme="light"] .dropdown-item:hover { background: var(--rw-surface-2); color: var(--rw-text); }
+html[data-theme="light"] .dropdown-item.danger:hover { background: var(--rw-red); color: var(--rw-red-ink); }
+
+/* ── Títulos y textos que estaban fijados en blanco ── */
+html[data-theme="light"] .page-title,
+html[data-theme="light"] .section-title,
+html[data-theme="light"] .stat-value,
+html[data-theme="light"] .modal-title,
+html[data-theme="light"] .modal h3,
+html[data-theme="light"] td.name,
+html[data-theme="light"] .job-title,
+html[data-theme="light"] .profile-name,
+html[data-theme="light"] .pstat-val,
+html[data-theme="light"] .rating-name,
+html[data-theme="light"] .activity-text strong,
+html[data-theme="light"] .offer-grid div { color: var(--rw-text); }
+html[data-theme="light"] .welcome-admin-title { background: linear-gradient(90deg, var(--rw-text), #B66A00); -webkit-background-clip: text; background-clip: text; }
+html[data-theme="light"] .welcome-title { background: linear-gradient(90deg, var(--rw-text), #C0435A 55%, #E5484D); -webkit-background-clip: text; background-clip: text; }
+html[data-theme="light"] .welcome-admin { background: linear-gradient(135deg, #FFF6E6, #FDECEE); border-color: #F4DDB0; }
+html[data-theme="light"] .welcome-card { background: linear-gradient(135deg, var(--rw-teal), var(--rw-blue)); border-color: #BFE6E1; }
+html[data-theme="light"] .welcome-banner { background: linear-gradient(135deg, #FDECEE, var(--rw-teal)); border-color: var(--rw-border); }
+
+/* ── Tarjetas, widgets y contenedores ── */
+html[data-theme="light"] .stat-card,
+html[data-theme="light"] .table-wrap,
+html[data-theme="light"] .widget,
+html[data-theme="light"] .card,
+html[data-theme="light"] .job-card { background: var(--rw-surface); border-color: var(--rw-border); box-shadow: var(--rw-shadow); }
+html[data-theme="light"] .stat-card:hover { border-color: var(--rw-border-2); }
+html[data-theme="light"] .stat-icon { opacity: .22; }
+html[data-theme="light"] .job-card:hover { background: #FBFCFE; border-color: #B9E3DE; }
+html[data-theme="light"] .job-icon { background: linear-gradient(135deg, var(--rw-red), var(--rw-teal)); border-color: var(--rw-border); }
+html[data-theme="light"] .pstat,
+html[data-theme="light"] .offer-grid div { background: var(--rw-surface-2); border-color: var(--rw-border); }
+html[data-theme="light"] .rating-item { border-bottom-color: var(--rw-border); }
+html[data-theme="light"] .rating-avatar { background: linear-gradient(135deg, var(--rw-red), var(--rw-teal)); color: var(--rw-text); }
+html[data-theme="light"] .skill { background: var(--rw-red); border-color: #F3C4C8; color: var(--rw-red-ink); }
+html[data-theme="light"] .star-pick button { color: #CBD5E1; }
+html[data-theme="light"] .activity-row { border-bottom-color: var(--rw-border); }
+html[data-theme="light"] .activity-row:hover { background: var(--rw-surface-2); }
+
+/* ── Tablas: encabezado, filas alternas, hover, bordes ── */
+html[data-theme="light"] thead tr,
+html[data-theme="light"] th { background: var(--rw-surface-2); }
+html[data-theme="light"] thead tr { border-bottom-color: var(--rw-border); }
+html[data-theme="light"] th { color: var(--rw-text-3); border-bottom-color: var(--rw-border); }
+html[data-theme="light"] td { color: var(--rw-text-2); border-bottom-color: #EDF2F7; }
+html[data-theme="light"] tbody tr:nth-child(even) { background: #FBFCFE; }
+html[data-theme="light"] tbody tr:hover { background: #F2F7FC; }
+
+/* ── Etiquetas de estado (pastel + texto oscuro; el texto de la etiqueta mantiene el significado) ── */
+html[data-theme="light"] .chip-green, html[data-theme="light"] .tag-new { background: var(--rw-green); color: var(--rw-green-ink); }
+html[data-theme="light"] .chip-red { background: var(--rw-red); color: var(--rw-red-ink); }
+html[data-theme="light"] .chip-yellow { background: var(--rw-yellow); color: var(--rw-yellow-ink); }
+html[data-theme="light"] .chip-blue, html[data-theme="light"] .chip-accent, html[data-theme="light"] .tag-recurrent { background: var(--rw-teal); color: var(--rw-teal-ink); }
+html[data-theme="light"] .chip-gray { background: var(--rw-surface-3); color: var(--rw-text-3); }
+html[data-theme="light"] .disponibilidad.on { background: var(--rw-green); border-color: #B7E2C9; color: var(--rw-green-ink); }
+html[data-theme="light"] .disponibilidad.off { background: var(--rw-surface-3); border-color: var(--rw-border-2); color: var(--rw-text-2); }
+html[data-theme="light"] .disponibilidad.new { background: var(--rw-yellow); border-color: #F1D59A; color: var(--rw-yellow-ink); }
+
+/* ── Botones (mismo tamaño; solo color) ── */
+html[data-theme="light"] .btn-ghost,
+html[data-theme="light"] .icon-btn,
+html[data-theme="light"] .page-btn { background: var(--rw-surface); border-color: var(--rw-border); color: var(--rw-text-2); }
+html[data-theme="light"] .btn-ghost:hover,
+html[data-theme="light"] .icon-btn:hover { background: var(--rw-surface-2); border-color: var(--rw-border-2); color: var(--rw-text); }
+html[data-theme="light"] .icon-btn.del:hover { background: var(--rw-red); border-color: #F3C4C8; }
+html[data-theme="light"] .page-btn:hover,
+html[data-theme="light"] .page-btn.active { background: var(--rw-red); border-color: #F3C4C8; color: var(--rw-red-ink); }
+html[data-theme="light"] .btn-accent { background: linear-gradient(135deg, #5BD3C6, #6BB8F0); color: #0B2A33; }
+html[data-theme="light"] .btn-accent:hover { box-shadow: 0 6px 16px rgba(15, 143, 132, .18); }
+html[data-theme="light"] .btn-red { background: linear-gradient(135deg, #E5484D, #F06B70); color: #FFFFFF; }
+html[data-theme="light"] .btn-red:hover { box-shadow: 0 6px 16px rgba(229, 72, 77, .2); }
+html[data-theme="light"] .btn-success { background: var(--rw-green); border-color: #B7E2C9; color: var(--rw-green-ink); }
+html[data-theme="light"] .btn-danger { background: var(--rw-red); border-color: #F3C4C8; color: var(--rw-red-ink); }
+html[data-theme="light"] .btn-gold { background: var(--rw-yellow); border-color: #F1D59A; color: var(--rw-yellow-ink); }
+html[data-theme="light"] .btn-aplicar { background: var(--rw-teal); border-color: #B9E3DE; color: var(--rw-teal-ink); }
+html[data-theme="light"] .btn-aplicar:hover { background: #C8ECE7; border-color: var(--accent); }
+/* Trabajador: el .btn base era translúcido con texto blanco */
+html[data-theme="light"] .rw-trabajador .btn { background: var(--rw-surface); border-color: var(--rw-border); color: var(--rw-text); }
+html[data-theme="light"] .rw-trabajador .btn:hover { background: var(--rw-surface-2); }
+html[data-theme="light"] .rw-trabajador .btn-accent { background: var(--rw-teal); border-color: #B9E3DE; color: var(--rw-teal-ink); }
+html[data-theme="light"] .rw-trabajador .btn-danger { background: var(--rw-red); border-color: #F3C4C8; color: var(--rw-red-ink); }
+html[data-theme="light"] .rw-trabajador .btn-gold { background: var(--rw-yellow); border-color: #F1D59A; color: var(--rw-yellow-ink); }
+html[data-theme="light"] .filtro-btn:hover, html[data-theme="light"] .filtro-btn.active { background: var(--rw-red); border-color: #F3C4C8; color: var(--rw-red-ink); }
+html[data-theme="light"] button:disabled, html[data-theme="light"] .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Formularios: inputs, selects, textareas, fechas, búsqueda, foco y placeholder ── */
+html[data-theme="light"] .form-input,
+html[data-theme="light"] .form-select,
+html[data-theme="light"] .input,
+html[data-theme="light"] .select,
+html[data-theme="light"] .textarea,
+html[data-theme="light"] .search-box { background: var(--rw-surface); border-color: var(--rw-border-2); color: var(--rw-text); }
+html[data-theme="light"] .search-box input { color: var(--rw-text); }
+html[data-theme="light"] .form-input:focus,
+html[data-theme="light"] .form-select:focus,
+html[data-theme="light"] .input:focus,
+html[data-theme="light"] .select:focus,
+html[data-theme="light"] .textarea:focus { background: var(--rw-surface); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15, 143, 132, .12); }
+html[data-theme="light"] .form-select option,
+html[data-theme="light"] .select option { background: #FFFFFF; color: var(--rw-text); }
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder { color: #94A3B8; }
+html[data-theme="light"] input:disabled,
+html[data-theme="light"] select:disabled,
+html[data-theme="light"] textarea:disabled { background: var(--rw-surface-3); color: var(--rw-text-3); }
+html[data-theme="light"] input[type="date"] { color-scheme: light; }
+html[data-theme="light"] .form-label { color: var(--rw-text-3); }
+
+/* ── Modales (estáticos y los que abre JavaScript) ── */
+html[data-theme="light"] .modal-overlay { background: rgba(36, 54, 74, .32); }
+html[data-theme="light"] .modal { background: var(--rw-surface); border-color: var(--rw-border); box-shadow: 0 24px 60px rgba(36, 54, 74, .18); color: var(--rw-text); }
+html[data-theme="light"] .modal-close { color: var(--rw-text-3); }
+
+/* ── Estilos en línea generados por Blade/JS (texto blanco o colores neón fijos) ── */
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="color:white" i],
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="color: white" i],
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="color:#fff;" i] { color: var(--rw-text) !important; }
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="color:#ff7070" i] { color: var(--rw-red-ink) !important; }
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="color:#4ade80" i] { color: var(--rw-green-ink) !important; }
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="color:#f59e0b" i] { color: var(--rw-yellow-ink) !important; }
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="color:#2dd4bf" i] { color: var(--rw-teal-ink) !important; }
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="color:#ff5a5f" i] { color: var(--rw-red-ink) !important; }
+/* Avisos con borde ámbar en línea (pagos simulados) */
+html[data-theme="light"] :is(.rw-admin, .rw-contratador, .rw-trabajador) [style*="rgba(245,158,11,.3)"] { background: var(--rw-yellow) !important; border-color: #F1D59A !important; color: var(--rw-yellow-ink) !important; }
+
+/* ── Toasts (creados con style.cssText, que el navegador normaliza a rgb(...)) ── */
+html[data-theme="light"] body > div[style*="position: fixed"][style*="rgb(74, 222, 128)"] {
+    background: var(--rw-green) !important; border-color: #B7E2C9 !important; color: var(--rw-green-ink) !important;
+    box-shadow: 0 8px 24px rgba(36, 54, 74, .12);
+}
+html[data-theme="light"] body > div[style*="position: fixed"][style*="rgb(255, 112, 112)"] {
+    background: var(--rw-red) !important; border-color: #F3C4C8 !important; color: var(--rw-red-ink) !important;
+    box-shadow: 0 8px 24px rgba(36, 54, 74, .12);
+}
+
+/* ── Business Intelligence / KPIs (kpi-dashboard.css) ── */
+html[data-theme="light"] .kpi-bi {
+    --kpi-s1: #0F8F84;    /* turquesa */
+    --kpi-s2: #D97706;    /* ámbar */
+    --kpi-s3: #7C5CD6;    /* violeta */
+    --kpi-pos: #17803F;   /* mejora demostrada */
+    --kpi-neg: #C9302C;   /* deterioro demostrado */
+    --kpi-neu: #64748B;   /* sin evaluación suficiente */
+}
+html[data-theme="light"] .kpi-campo select,
+html[data-theme="light"] .kpi-campo input { background: var(--rw-surface); border-color: var(--rw-border-2); color: var(--rw-text); color-scheme: light; }
+html[data-theme="light"] .kpi-aviso { background: var(--rw-yellow); border-color: #F1D59A; color: var(--rw-yellow-ink); }
+html[data-theme="light"] .kpi-estado { border-color: var(--rw-border-2); color: var(--rw-text-3); }
+html[data-theme="light"] .kpi-estado.kpi-error { color: var(--rw-red-ink); border-color: #F3C4C8; background: #FFF8F8; }
+html[data-theme="light"] .kpi-cargando span { background: linear-gradient(90deg, #EEF2F7, #F8FAFC, #EEF2F7); background-size: 200% 100%; }
+html[data-theme="light"] .kpi-alerta { background: var(--rw-surface); border-color: var(--rw-border); }
+html[data-theme="light"] .kpi-alerta-alta { background: var(--rw-red); border-color: #F3C4C8; }
+html[data-theme="light"] .kpi-alerta-media { background: var(--rw-yellow); border-color: #F1D59A; }
+html[data-theme="light"] .kpi-alerta-alta b { color: var(--rw-red-ink); }
+html[data-theme="light"] .kpi-alerta-media b { color: var(--rw-yellow-ink); }
+html[data-theme="light"] .kpi-card,
+html[data-theme="light"] .kpi-panel { background: var(--rw-surface); border-color: var(--rw-border); box-shadow: var(--rw-shadow); }
+html[data-theme="light"] .kpi-obj { background: var(--rw-teal); color: var(--rw-teal-ink); }
+html[data-theme="light"] .kpi-sim,
+html[data-theme="light"] .kpi-madurez { color: var(--rw-yellow-ink); }
+html[data-theme="light"] .kpi-sim { background: var(--rw-yellow); }
+html[data-theme="light"] .kpi-pos .kpi-badge { background: var(--rw-green); }
+html[data-theme="light"] .kpi-neg .kpi-badge { background: var(--rw-red); }
+html[data-theme="light"] .kpi-neu .kpi-badge { background: var(--rw-surface-3); }
+html[data-theme="light"] .kpi-metrica { background: var(--rw-surface-2); border-color: var(--rw-border); }
+html[data-theme="light"] .kpi-metrica.kpi-atencion strong { color: var(--rw-yellow-ink); }
+html[data-theme="light"] .kpi-etapa-barra { background: var(--rw-surface-3); }
+html[data-theme="light"] .kpi-etapa-barra > span { background: linear-gradient(90deg, #8FD9CF, #C4ECE7); }
+html[data-theme="light"] .kpi-svg .kpi-eje { stroke: #E3EAF2; }
+html[data-theme="light"] .kpi-svg text { fill: var(--rw-text-3); }
+html[data-theme="light"] .kpi-tabla th { background: transparent; }
+html[data-theme="light"] .kpi-datos summary { color: var(--accent); }

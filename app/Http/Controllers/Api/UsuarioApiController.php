@@ -1,0 +1,103 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
+
+class UsuarioApiController extends Controller
+{
+    public function index()
+    {
+        return response()->json(
+            User::with('roles')->get()
+        );
+    }
+
+   public function store(Request $request)
+{
+    $validated = $request->validate([
+        'password' => ['required', Password::defaults()],
+        'fechanac' => User::reglasFechaNacimiento(),
+    ], array_merge(
+        User::mensajesContrasena(),
+        User::mensajesFechaNacimiento('fechanac', User::MENSAJE_EDAD_ADMIN)
+    ));
+
+    $usuario = User::create([
+        'nombre'     => $request->nombre,
+        'email'      => $request->email,
+        'contrasena' => Hash::make($request->password),
+        'cedula'     => $request->cedula,
+        'telefono'   => $request->telefono,
+        'direccion'  => $request->direccion,
+        'ciudad'     => $request->ciudad,
+        'fechanac'   => $validated['fechanac'],
+        'estado'     => $request->estado ?? 1,
+    ]);
+
+    if ($request->rol) {
+        $usuario->assignRole($request->rol);
+    }
+
+    return response()->json([
+        'message' => 'Usuario creado',
+        'data'    => $usuario->load('roles')
+    ]);
+}
+
+    public function show(string $id)
+    {
+        return response()->json(
+            User::findOrFail($id)
+        );
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $usuario = User::findOrFail($id);
+
+        $usuario->update([
+            'nombre' => $request->nombre,
+            'email' => $request->email,
+            'cedula' => $request->cedula,
+            'ciudad' => $request->ciudad,
+            'estado' => $request->estado
+        ]);
+
+        return response()->json([
+            'message' => 'Usuario actualizado'
+        ]);
+    }
+
+    public function destroy(string $id)
+    {
+        User::destroy($id);
+
+        return response()->json([
+            'message' => 'Usuario eliminado'
+        ]);
+    }
+    public function actualizarPerfil(Request $request)
+{
+    $user = $request->user();
+
+    $request->validate([
+        'nombre'    => 'required|string|max:200',
+        'email'     => 'required|email|max:150|unique:usuarios,email,' . $user->cedula . ',cedula',
+        'telefono'  => 'nullable|string|max:20',
+        'ciudad'    => 'nullable|string|max:100',
+        'direccion' => 'nullable|string|max:200',
+    ]);
+
+    $user->update($request->only(['nombre', 'email', 'telefono', 'ciudad', 'direccion']));
+
+    return response()->json([
+        'message' => 'Perfil actualizado exitosamente.',
+        'user'    => $user
+    ]);
+}
+}

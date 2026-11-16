@@ -1,0 +1,67 @@
+# Contexto de construcción Docker de REDWORK.
+# Todo lo listado aquí NO se copia a la imagen (secretos, artefactos locales y archivos no necesarios en producción).
+
+# Secretos y configuración local (las variables de producción se definen en Render)
+.env
+.env.*
+!.env.example
+auth.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Control de versiones y herramientas locales
+.git
+.gitattributes
+.github
+.claude
+.codex
+.cursor
+.idea
+.vscode
+.zed
+.nova
+.phpactor.json
+.editorconfig
+_ide_helper.php
+CLAUDE.md
+Homestead.*
+
+# Dependencias y compilados: se reconstruyen dentro de la imagen (Linux) desde los lockfiles
+vendor
+node_modules
+public/build
+public/hot
+public/storage
+
+# Bases de datos locales, dumps y logs
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite-journal
+*.log
+database/*.sqlite*
+
+# Estado de ejecución local (se recrea vacío en la imagen)
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing
+storage/app/private/*
+storage/app/public/*
+storage/pail
+bootstrap/cache/*.php
+
+# Pruebas y documentación (no se sirven en producción)
+tests
+phpunit.xml
+.phpunit.cache
+.phpunit.result.cache
+docs
+README.md
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
