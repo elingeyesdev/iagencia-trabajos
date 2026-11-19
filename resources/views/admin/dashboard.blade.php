@@ -201,7 +201,7 @@
                     <div class="page-title">👥 Usuarios</div>
                     <div class="page-breadcrumb">Admin / <span>Acceso y Seguridad</span> / Usuarios</div>
                 </div>
-                <button class="btn btn-accent" onclick="abrirModalUsuario()">+ Nuevo Usuario</button>
+                <button class="btn btn-accent" onclick="abrirModalUsuario()">Guardar +</button>
             </div>
             <div class="toolbar">
                 <div class="search-box">
@@ -280,7 +280,7 @@
                     <div class="page-title">🛡️ Roles</div>
                     <div class="page-breadcrumb">Admin / <span>Acceso y Seguridad</span> / Roles</div>
                 </div>
-                <button class="btn btn-accent" onclick="abrirModalRol()">+ Nuevo Rol</button>
+                <button class="btn btn-accent" onclick="abrirModalRol()">Guardar +</button>
             </div>
             <div class="table-wrap">
                 <table id="tabla-roles">
@@ -351,7 +351,7 @@
         <div class="panel" id="panel-categorias">
             <div class="page-header">
                 <div><div class="page-title">🏢 Categorías</div></div>
-                <button class="btn btn-accent" onclick="openModal('modal-categoria')">+ Nueva Categoría</button>
+                <button class="btn btn-accent" onclick="openModal('modal-categoria')">Guardar +</button>
             </div>
             <div class="table-wrap">
                 <table id="tabla-categorias">
@@ -365,7 +365,7 @@
         <div class="panel" id="panel-publicaciones">
             <div class="page-header">
                 <div><div class="page-title">💼 Publicaciones</div></div>
-                <button class="btn btn-accent" onclick="openModal('modal-publicacion')">+ Nueva Publicación</button>
+                <button class="btn btn-accent" onclick="openModal('modal-publicacion')">Guardar +</button>
             </div>
             <div class="table-wrap">
                 <table id="tabla-publicaciones">
@@ -379,7 +379,7 @@
         <div class="panel" id="panel-postulantes">
             <div class="page-header">
                 <div><div class="page-title">🧰 Postulantes</div></div>
-                <button class="btn btn-accent" onclick="abrirModalPostulante()">+ Nuevo Postulante</button>
+                <button class="btn btn-accent" onclick="abrirModalPostulante()">Guardar +</button>
             </div>
             <div class="table-wrap">
                 <table id="tabla-postulantes">

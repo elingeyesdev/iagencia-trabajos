@@ -229,8 +229,8 @@ test('carga: el archivo no tiene import/export y se ejecuta sin errores; expone 
     assert.deepEqual(env.escrituras(), []);
 });
 
-test('la vista: el botón «+ Nuevo Usuario» llama a abrirModalUsuario() y no a openModal directo', () => {
-    assert.match(VIEW, /onclick="abrirModalUsuario\(\)"[^>]*>\+ Nuevo Usuario</);
+test('la vista: el botón «Guardar +» llama a abrirModalUsuario() y no a openModal directo', () => {
+    assert.match(VIEW, /onclick="abrirModalUsuario\(\)"[^>]*>\Guardar +</);
     assert.doesNotMatch(VIEW, /onclick="openModal\('modal-usuario'\)"/);
     assert.equal(TITULO_INICIAL, 'Nuevo Usuario');
 });
@@ -342,7 +342,6 @@ test('(f) editar A → nuevo → guardar no genera ningún PUT a A', async () =>
     await env.asentar();
     const A = 111222333;
     env.win.editarUsuario(A, 'Usuario A', 'a@example.com', 'Ambato', 1, 'administrador');
-    // Sin cancelar explícitamente: se pulsa «+ Nuevo Usuario» directamente.
     env.win.abrirModalUsuario();
     rellenar(env, DATOS_NUEVO);
     await env.win.guardarUsuario();

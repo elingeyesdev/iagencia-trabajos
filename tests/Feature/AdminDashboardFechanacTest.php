@@ -10,15 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
-/**
- * Tarea 1.7: campo «Fecha de nacimiento» en el modal «Nuevo usuario» del
- * dashboard de administrador (resources/views/admin/dashboard.blade.php),
- * renderizado por GET /dashboard (middleware auth + verified, rol administrador).
- *
- * La parte de JavaScript (resources/js/admin-dashboard.js) se verifica de forma
- * ESTÁTICA (lectura del archivo y expresiones regulares): no hay runner JS en
- * el proyecto, por lo que estas pruebas no ejecutan el código en un navegador.
- */
+
 class AdminDashboardFechanacTest extends TestCase
 {
     use RefreshDatabase;
