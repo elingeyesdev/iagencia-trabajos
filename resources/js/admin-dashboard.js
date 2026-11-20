@@ -204,20 +204,7 @@ async function ejecutarEliminarRol() {
     } else { toast(data.message || 'Error al eliminar.', 'error'); }
 }
 
-async function asignarRolFetch(e) {
-    e.preventDefault();
-    const selects = e.target.querySelectorAll('select');
-    const res = await fetch('/api/admin/asignar-rol', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usuario_id: selects[0].value, rol: selects[1].value })
-    });
-    const data = await res.json();
-    if (res.ok) { toast(data.message); setTimeout(() => location.reload(), 1500); }
-    else { toast(data.message || 'Error.', 'error'); }
-}
-
-function editarRolUsuario(id, nombre) { showPanel('asignar-rol'); }
+// asignarRolFetch y editarRolUsuario: ver la sección «ASIGNAR ROL» más abajo.
 function verUsuariosRol(rolName) {
     showPanel('usuarios');
     const sel = document.querySelector('select[onchange="filterByRol(this.value)"]');
@@ -580,12 +567,20 @@ async function cargarTodosRoles() {
             });
         }
 
-        const selects = document.querySelectorAll('#panel-asignar-rol select');
-        if (selects[1]) {
-            selects[1].innerHTML = '<option value="">— Seleccione rol —</option>';
-            roles.forEach(r => {
-                selects[1].innerHTML += `<option value="${r.name}">${r.name.charAt(0).toUpperCase() + r.name.slice(1)}</option>`;
-            });
+        // Asignar Rol: selector del formulario y filtro de la tabla (por id, conservando la selección actual)
+        arEstado.roles = Array.isArray(roles) ? roles : [];
+        const opciones = arEstado.roles.map(r => `<option value="${esc(r.name)}">${esc(iconoRol(r.name))} ${esc(capitalizar(r.name))}</option>`).join('');
+        const arRol = document.getElementById('ar-rol-select');
+        if (arRol) {
+            const previo = arRol.value;
+            arRol.innerHTML = '<option value="">— Seleccione rol —</option>' + opciones;
+            arRol.value = previo;
+        }
+        const arFiltro = document.getElementById('ar-filtro-rol');
+        if (arFiltro) {
+            const previo = arFiltro.value;
+            arFiltro.innerHTML = '<option value="">Todos los roles</option>' + opciones;
+            arFiltro.value = previo;
         }
     } catch(e) { console.log('Error cargando roles:', e); }
 }
@@ -807,11 +802,512 @@ async function ejecutarAnularPago() {
     } finally { btn.disabled = false; }
 }
 
+// ── ASIGNAR ROL ──
+// Búsqueda de usuarios en servidor (GET /api/admin/asignaciones), resumen, capacidades del rol derivadas de las
+// rutas reales (GET /api/admin/roles/{id}/capacidades) y asignar/quitar sin recargar la página.
+const AR_DEBOUNCE_MS = 300;
+const arEstado = {
+    roles: [],            // GET /api/admin/roles (id, name, users_count)
+    usuario: null,        // usuario seleccionado en el formulario
+    resultados: [],       // resultados del buscador del formulario
+    activo: -1,           // opción resaltada con el teclado
+    secBuscador: 0,       // secuencia del debounce del buscador del formulario
+    secTabla: 0,          // secuencia del debounce del buscador de la tabla
+    secCapacidades: 0,    // descarta respuestas de capacidades obsoletas
+    filas: [],            // filas visibles de la tabla
+    page: 1,
+    lastPage: 1,
+    quitar: null,         // fila pendiente de confirmación para quitar rol
+};
+const AR_SIN_FECHA = 'La base de datos no guarda la fecha de asignación de roles (model_has_roles no tiene fechas).';
+
+function capitalizar(s) { s = String(s ?? ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+function iconoRol(n) { return n === 'administrador' ? '⚙️' : n === 'contratador' ? '💼' : n === 'trabajador' ? '🔧' : '🏷️'; }
+function chipRolClase(n) { return n === 'administrador' ? 'chip-yellow' : n === 'contratador' ? 'chip-blue' : n === 'trabajador' ? 'chip-green' : 'chip-accent'; }
+function chipsRoles(roles) {
+    return (roles && roles.length)
+        ? roles.map(r => `<span class="chip ${chipRolClase(r)}">${esc(iconoRol(r))} ${esc(capitalizar(r))}</span>`).join(' ')
+        : '<span class="chip chip-gray">Sin rol asignado</span>';
+}
+function chipEstado(e) { return Number(e) === 1 ? '<span class="chip chip-green">Activo</span>' : '<span class="chip chip-red">Inactivo</span>'; }
+function arQuery(obj) {
+    return Object.entries(obj)
+        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+}
+function arScroll(id) { document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }); }
+
+async function cargarResumenAsignaciones() {
+    const ids = { total_usuarios: 'ar-resumen-total', con_rol: 'ar-resumen-con', roles_disponibles: 'ar-resumen-roles', sin_rol: 'ar-resumen-sin' };
+    try {
+        const r = await apiJson('/api/admin/asignaciones/resumen');
+        Object.entries(ids).forEach(([k, id]) => { const el = document.getElementById(id); if (el) el.textContent = Number(r[k] ?? 0).toLocaleString('es-BO'); });
+    } catch (e) {
+        Object.values(ids).forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
+        console.log('Error resumen de asignaciones:', e);
+    }
+}
+
+// ── Buscador de usuario del formulario (debounce + teclado) ──
+function buscarUsuarioAsignar(texto) {
+    const sec = ++arEstado.secBuscador;
+    const q = String(texto ?? '').trim();
+    if (!q) { arEstado.resultados = []; pintarListaUsuarios(); return; }
+    setTimeout(() => { if (sec === arEstado.secBuscador) ejecutarBusquedaUsuario(q, sec); }, AR_DEBOUNCE_MS);
+}
+
+async function ejecutarBusquedaUsuario(q, sec) {
+    try {
+        const r = await apiJson('/api/admin/asignaciones?' + arQuery({ buscar: q, per_page: 8 }));
+        if (sec !== arEstado.secBuscador) return; // respuesta obsoleta
+        arEstado.resultados = r.data || [];
+        arEstado.activo = arEstado.resultados.length ? 0 : -1;
+        pintarListaUsuarios(true);
+    } catch (e) {
+        toast(e.message, 'error');
+    }
+}
+
+function pintarListaUsuarios(buscado = false) {
+    const lista = document.getElementById('ar-usuario-lista');
+    const input = document.getElementById('ar-usuario-buscar');
+    if (!lista) return;
+    const abierta = buscado || arEstado.resultados.length > 0;
+    lista.hidden = !abierta;
+    input?.setAttribute?.('aria-expanded', abierta ? 'true' : 'false');
+    if (!arEstado.resultados.length) {
+        lista.innerHTML = buscado ? '<li class="ar-lista-vacia" role="option" aria-disabled="true">Sin usuarios que coincidan.</li>' : '';
+        input?.removeAttribute?.('aria-activedescendant');
+        return;
+    }
+    lista.innerHTML = arEstado.resultados.map((u, i) => `
+        <li role="option" id="ar-opt-${i}" class="ar-opcion${i === arEstado.activo ? ' activa' : ''}" aria-selected="${i === arEstado.activo}" onclick="seleccionarUsuarioAsignar(${i})">
+            <span class="ar-opcion-nombre">${esc(u.nombre)}</span>
+            <span class="ar-opcion-meta">${esc(u.email)} · ${esc((u.roles || []).map(capitalizar).join(', ') || 'Sin rol')}</span>
+        </li>`).join('');
+    if (arEstado.activo >= 0) input?.setAttribute?.('aria-activedescendant', 'ar-opt-' + arEstado.activo);
+}
+
+function teclaUsuarioAsignar(e) {
+    const n = arEstado.resultados.length;
+    if (e.key === 'ArrowDown' && n) { e.preventDefault(); arEstado.activo = (arEstado.activo + 1) % n; pintarListaUsuarios(true); }
+    else if (e.key === 'ArrowUp' && n) { e.preventDefault(); arEstado.activo = (arEstado.activo - 1 + n) % n; pintarListaUsuarios(true); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (arEstado.activo >= 0 && n) seleccionarUsuarioAsignar(arEstado.activo); }
+    else if (e.key === 'Escape') { arEstado.resultados = []; arEstado.activo = -1; pintarListaUsuarios(); }
+}
+
+function seleccionarUsuarioAsignar(i) {
+    const u = arEstado.resultados[i];
+    if (!u) return;
+    fijarUsuarioAsignar(u);
+    arEstado.resultados = []; arEstado.activo = -1;
+    pintarListaUsuarios();
+}
+
+function fijarUsuarioAsignar(u) {
+    arEstado.usuario = u;
+    const hidden = document.getElementById('ar-usuario-id');
+    if (hidden) hidden.value = u ? u.cedula : '';
+    const input = document.getElementById('ar-usuario-buscar');
+    if (input && u) input.value = u.nombre;
+    pintarUsuarioInfo();
+    actualizarEstadoGuardar();
+}
+
+function pintarUsuarioInfo() {
+    const box = document.getElementById('ar-usuario-info');
+    if (!box) return;
+    const u = arEstado.usuario;
+    if (!u) { box.innerHTML = '<div class="ar-vacio">Busca y selecciona un usuario para ver su información.</div>'; return; }
+    const fila = (k, v) => `<div class="ar-dato"><span>${esc(k)}</span><span>${v}</span></div>`;
+    box.innerHTML = `<div class="ar-usuario-nombre">👤 ${esc(u.nombre)}</div>`
+        + fila('Correo', esc(u.email ?? '—'))
+        + fila('Cédula', esc(u.cedula))
+        + fila('Estado', u.estado === undefined ? '—' : chipEstado(u.estado))
+        + fila('Rol actual', u.roles ? chipsRoles(u.roles) : '—');
+}
+
+function actualizarEstadoGuardar() {
+    const btn = document.getElementById('ar-guardar');
+    const aviso = document.getElementById('ar-aviso');
+    const rol = document.getElementById('ar-rol-select')?.value || '';
+    const u = arEstado.usuario;
+    const mismo = !!(u && rol && Array.isArray(u.roles) && u.roles.length === 1 && u.roles[0] === rol);
+    if (aviso) {
+        aviso.hidden = !mismo;
+        aviso.textContent = mismo ? `${u.nombre} ya tiene el rol ${capitalizar(rol)}. Elige otro rol para cambiarlo.` : '';
+    }
+    if (btn) btn.disabled = !(u && rol) || mismo;
+}
+
+// ── Información y capacidades del rol (columna derecha) ──
+function cambiarRolAsignar(nombre) {
+    actualizarEstadoGuardar();
+    return mostrarRolAsignacion(nombre);
+}
+
+async function mostrarRolAsignacion(nombre) {
+    const info = document.getElementById('ar-rol-info');
+    const permisos = document.getElementById('ar-rol-permisos');
+    const rol = arEstado.roles.find(r => r.name === nombre);
+    const sec = ++arEstado.secCapacidades;
+    if (!rol) {
+        if (info) info.innerHTML = '<div class="ar-vacio">Selecciona un rol para ver su información.</div>';
+        if (permisos) permisos.innerHTML = '<div class="ar-vacio">Selecciona un rol para ver a qué módulos da acceso.</div>';
+        return;
+    }
+    const pintarInfo = (r, descripcion) => {
+        if (!info) return;
+        info.innerHTML = `<div class="ar-usuario-nombre">${esc(iconoRol(r.name))} ${esc(capitalizar(r.name))}</div>`
+            + `<div class="ar-dato"><span>Descripción</span><span>${descripcion ? esc(descripcion) : '<em class="ar-tenue">Sin descripción registrada</em>'}</span></div>`
+            + `<div class="ar-dato"><span>Usuarios con este rol</span><span>${esc(Number(r.users_count ?? 0))}</span></div>`;
+    };
+    pintarInfo(rol, null);
+    if (permisos) permisos.innerHTML = '<div class="ar-vacio">Cargando permisos...</div>';
+    try {
+        const r = await apiJson('/api/admin/roles/' + encodeURIComponent(rol.id) + '/capacidades');
+        if (sec !== arEstado.secCapacidades) return;
+        pintarInfo(r.rol || rol, r.descripcion);
+        const caps = r.capacidades || [];
+        const spatie = r.permisos_spatie || [];
+        let html = caps.length
+            ? '<ul class="ar-capacidades">' + caps.map(c => `<li><span class="ar-cap-icono" aria-hidden="true">${esc(c.icono)}</span><span class="ar-cap-texto"><strong>${esc(c.etiqueta)}</strong><small>${esc((c.metodos || []).join(' · '))} · ${esc(c.rutas)} ruta(s)</small></span></li>`).join('') + '</ul>'
+            : '<div class="ar-vacio">Este rol no tiene rutas de la API asociadas: no da acceso a ningún módulo.</div>';
+        if (spatie.length) html += `<div class="ar-dato"><span>Permisos Spatie</span><span>${spatie.map(esc).join(', ')}</span></div>`;
+        if (r.nota_limitacion) html += `<p class="ar-nota">ℹ️ ${esc(r.nota_limitacion)}</p>`;
+        if (permisos) permisos.innerHTML = html;
+    } catch (e) {
+        if (sec !== arEstado.secCapacidades) return;
+        if (permisos) permisos.innerHTML = `<div class="ar-error">${esc(e.message)}</div>`;
+        toast(e.message, 'error');
+    }
+}
+
+// ── Asignar (submit del formulario «Guardar +») ──
+async function asignarRolFetch(e) {
+    e?.preventDefault?.();
+    const usuarioId = document.getElementById('ar-usuario-id')?.value || '';
+    const rol = document.getElementById('ar-rol-select')?.value || '';
+    if (!usuarioId || !rol) { toast('Selecciona un usuario y un rol.', 'error'); return; }
+    const btn = document.getElementById('ar-guardar');
+    if (btn) btn.disabled = true;
+    try {
+        const r = await apiJson('/api/admin/asignar-rol', 'POST', { usuario_id: usuarioId, rol });
+        toast((r && r.message) || 'Rol asignado.');
+        if (arEstado.usuario && String(arEstado.usuario.cedula) === String(usuarioId)) {
+            arEstado.usuario = Object.assign({}, arEstado.usuario, { roles: [rol] });
+            pintarUsuarioInfo();
+        }
+        await refrescarAsignaciones();
+    } catch (err) {
+        toast(err.message, 'error');
+    } finally {
+        actualizarEstadoGuardar();
+    }
+}
+
+async function refrescarAsignaciones() {
+    await Promise.all([cargarResumenAsignaciones(), cargarAsignaciones(), cargarTodosRoles(), cargarHistorialAsignaciones()]);
+    const rol = document.getElementById('ar-rol-select')?.value;
+    if (rol) await mostrarRolAsignacion(rol);
+}
+
+// Precarga un usuario en el formulario (desde la tabla o desde otros paneles).
+async function editarRolUsuario(id, nombre) {
+    showPanel('asignar-rol');
+    const local = arEstado.filas.find(f => String(f.cedula) === String(id));
+    fijarUsuarioAsignar(local || { cedula: id, nombre: nombre ?? String(id) });
+    arScroll('ar-col-form');
+    if (local) return;
+    try {
+        const r = await apiJson('/api/admin/asignaciones?' + arQuery({ buscar: nombre ?? '', per_page: 50 }));
+        const u = (r.data || []).find(f => String(f.cedula) === String(id));
+        if (u && arEstado.usuario && String(arEstado.usuario.cedula) === String(id)) fijarUsuarioAsignar(u);
+    } catch (e) { console.log('Error precargando usuario:', e); }
+}
+
+// ── Tabla «Usuarios y roles asignados» ──
+function buscarTablaAsignaciones(texto) {
+    const sec = ++arEstado.secTabla;
+    const limpiar = document.getElementById('ar-tabla-limpiar');
+    if (limpiar) limpiar.hidden = !String(texto ?? '').length;
+    setTimeout(() => { if (sec === arEstado.secTabla) { arEstado.page = 1; cargarAsignaciones(); } }, AR_DEBOUNCE_MS);
+}
+
+function limpiarBusquedaAsignaciones() {
+    const input = document.getElementById('ar-tabla-buscar');
+    if (input) input.value = '';
+    const limpiar = document.getElementById('ar-tabla-limpiar');
+    if (limpiar) limpiar.hidden = true;
+    arEstado.secTabla++;
+    arEstado.page = 1;
+    return cargarAsignaciones();
+}
+
+function filtrarAsignaciones() {
+    arEstado.page = 1;
+    return cargarAsignaciones();
+}
+
+function paginaAsignaciones(delta) {
+    const nueva = arEstado.page + delta;
+    if (nueva < 1 || nueva > arEstado.lastPage) return;
+    arEstado.page = nueva;
+    return cargarAsignaciones();
+}
+
+async function cargarAsignaciones() {
+    const tbody = document.getElementById('tbody-asignaciones');
+    if (!tbody) return;
+    const filtros = {
+        buscar: (document.getElementById('ar-tabla-buscar')?.value || '').trim(),
+        rol: document.getElementById('ar-filtro-rol')?.value,
+        estado: document.getElementById('ar-filtro-estado')?.value,
+        con_rol: document.getElementById('ar-filtro-conrol')?.value,
+        page: arEstado.page,
+        per_page: 10,
+    };
+    tbody.innerHTML = '<tr><td colspan="6" class="ar-celda-info">Cargando usuarios...</td></tr>';
+    try {
+        const r = await apiJson('/api/admin/asignaciones?' + arQuery(filtros));
+        const meta = r.meta || {};
+        arEstado.filas = r.data || [];
+        arEstado.lastPage = Number(meta.last_page) || 1;
+        arEstado.page = Number(meta.current_page) || arEstado.page;
+        const info = document.getElementById('ar-paginacion-info');
+        if (info) info.textContent = meta.total
+            ? `Mostrando ${meta.from ?? 0}–${meta.to ?? 0} de ${meta.total} · Página ${arEstado.page} de ${arEstado.lastPage}`
+            : '';
+        const prev = document.getElementById('ar-prev'); if (prev) prev.disabled = arEstado.page <= 1;
+        const next = document.getElementById('ar-next'); if (next) next.disabled = arEstado.page >= arEstado.lastPage;
+
+        if (!arEstado.filas.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="ar-celda-info">No se encontraron usuarios con los filtros seleccionados.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = arEstado.filas.map((u, i) => {
+            const tieneRol = (u.roles || []).length > 0;
+            const acciones = [
+                tieneRol ? `<button class="icon-btn" title="Ver rol" aria-label="Ver información y permisos del rol" onclick="verRolFila(${i})">👁️</button>` : '',
+                `<button class="icon-btn" title="Cambiar rol" aria-label="Cambiar el rol de este usuario" onclick="cambiarRolFila(${i})">✏️</button>`,
+                tieneRol ? `<button class="icon-btn del" title="Quitar rol" aria-label="Quitar el rol de este usuario" onclick="confirmarQuitarRol(${i})">🗑️</button>` : '',
+            ].join('');
+            return `<tr>
+                <td class="name" data-label="Nombre">${esc(u.nombre)}</td>
+                <td data-label="Correo">${esc(u.email)}</td>
+                <td data-label="Rol actual">${chipsRoles(u.roles)}</td>
+                <td data-label="Estado">${chipEstado(u.estado)}</td>
+                <td data-label="Fecha de asignación"><span class="ar-tenue" title="${esc(AR_SIN_FECHA)}">No disponible</span></td>
+                <td data-label="Acciones"><div class="action-btns">${acciones}</div></td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" class="ar-celda-info ar-error">${esc(e.message)}</td></tr>`;
+        toast(e.message, 'error');
+    }
+}
+
+function verRolFila(i) {
+    const u = arEstado.filas[i];
+    if (!u || !(u.roles || []).length) return;
+    mostrarRolAsignacion(u.roles[0]);
+    arScroll('ar-col-rol');
+}
+
+function cambiarRolFila(i) {
+    const u = arEstado.filas[i];
+    if (u) editarRolUsuario(u.cedula, u.nombre);
+}
+
+function confirmarQuitarRol(i) {
+    const u = arEstado.filas[i];
+    if (!u) return;
+    arEstado.quitar = u;
+    document.getElementById('quitar-rol-nombre').textContent = u.nombre;
+    document.getElementById('quitar-rol-rol').textContent = (u.roles || []).map(capitalizar).join(', ') || '—';
+    document.getElementById('quitar-rol-error').textContent = '';
+    openModal('modal-quitar-rol');
+}
+
+async function ejecutarQuitarRol() {
+    const u = arEstado.quitar;
+    if (!u) return;
+    const btn = document.getElementById('quitar-rol-btn');
+    const errEl = document.getElementById('quitar-rol-error');
+    errEl.textContent = '';
+    btn.disabled = true;
+    try {
+        const r = await apiJson('/api/admin/quitar-rol', 'POST', { usuario_id: u.cedula });
+        toast((r && r.message) || 'Rol removido.');
+        closeModal('modal-quitar-rol');
+        arEstado.quitar = null;
+        if (arEstado.usuario && String(arEstado.usuario.cedula) === String(u.cedula)) {
+            arEstado.usuario = Object.assign({}, arEstado.usuario, { roles: [] });
+            pintarUsuarioInfo();
+            actualizarEstadoGuardar();
+        }
+        await refrescarAsignaciones();
+    } catch (e) {
+        errEl.textContent = e.message;
+        toast(e.message, 'error');
+    } finally { btn.disabled = false; }
+}
+
+// ── Historial de asignaciones (GET /api/admin/asignaciones/historial, solo lectura) ──
+const AR_ACCIONES = {
+    asignacion: { icono: '➕', etiqueta: 'Asignación', chip: 'chip-green' },
+    cambio:     { icono: '🔄', etiqueta: 'Cambio',     chip: 'chip-blue' },
+    retirada:   { icono: '➖', etiqueta: 'Retirada',   chip: 'chip-red' },
+};
+const arHistorial = { page: 1, lastPage: 1, filas: [], sec: 0, secBuscar: 0, origenFoco: null };
+
+function chipAccionHistorial(h) {
+    const a = AR_ACCIONES[h.accion] || { icono: '🔹', etiqueta: h.accion_etiqueta || h.accion, chip: 'chip-gray' };
+    return `<span class="chip ${a.chip} ar-chip-accion"><span aria-hidden="true">${esc(a.icono)}</span> ${esc(h.accion_etiqueta || a.etiqueta)}</span>`;
+}
+function rolHistorial(r) { return r ? `${esc(iconoRol(r))} ${esc(capitalizar(r))}` : '<span class="ar-tenue">Sin rol</span>'; }
+function adminHistorial(a) { return a ? esc(a.nombre || ('Cédula ' + (a.cedula ?? '—'))) : '<span class="ar-tenue">No registrado</span>'; }
+
+function buscarHistorialAsignaciones(texto) {
+    const sec = ++arHistorial.secBuscar;
+    const limpiar = document.getElementById('arh-buscar-limpiar');
+    if (limpiar) limpiar.hidden = !String(texto ?? '').length;
+    setTimeout(() => { if (sec === arHistorial.secBuscar) { arHistorial.page = 1; cargarHistorialAsignaciones(); } }, AR_DEBOUNCE_MS);
+}
+
+function limpiarBusquedaHistorial() {
+    const input = document.getElementById('arh-buscar');
+    if (input) input.value = '';
+    const limpiar = document.getElementById('arh-buscar-limpiar');
+    if (limpiar) limpiar.hidden = true;
+    arHistorial.secBuscar++;
+    arHistorial.page = 1;
+    return cargarHistorialAsignaciones();
+}
+
+function filtrarHistorial() {
+    arHistorial.page = 1;
+    return cargarHistorialAsignaciones();
+}
+
+function limpiarFiltrosHistorial() {
+    for (const id of ['arh-buscar', 'arh-accion', 'arh-desde', 'arh-hasta']) { const el = document.getElementById(id); if (el) el.value = ''; }
+    const limpiar = document.getElementById('arh-buscar-limpiar');
+    if (limpiar) limpiar.hidden = true;
+    arHistorial.secBuscar++;
+    arHistorial.page = 1;
+    return cargarHistorialAsignaciones();
+}
+
+function paginaHistorial(delta) {
+    const nueva = arHistorial.page + delta;
+    if (nueva < 1 || nueva > arHistorial.lastPage) return;
+    arHistorial.page = nueva;
+    return cargarHistorialAsignaciones();
+}
+
+async function cargarHistorialAsignaciones() {
+    const tbody = document.getElementById('tbody-historial');
+    if (!tbody) return;
+    const sec = ++arHistorial.sec;
+    const errEl = document.getElementById('arh-error');
+    const wrap = document.getElementById('arh-tabla-wrap');
+    const filtros = {
+        buscar: (document.getElementById('arh-buscar')?.value || '').trim(),
+        accion: document.getElementById('arh-accion')?.value,
+        desde: document.getElementById('arh-desde')?.value,
+        hasta: document.getElementById('arh-hasta')?.value,
+        page: arHistorial.page,
+        per_page: 10,
+    };
+    if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+    wrap?.setAttribute?.('aria-busy', 'true');
+    tbody.innerHTML = '<tr><td colspan="7" class="ar-celda-info">⏳ Cargando historial...</td></tr>';
+    try {
+        const r = await apiJson('/api/admin/asignaciones/historial?' + arQuery(filtros));
+        if (sec !== arHistorial.sec) return; // respuesta obsoleta
+        const meta = (r && r.meta) || {};
+        arHistorial.filas = (r && r.data) || [];
+        arHistorial.lastPage = Number(meta.last_page) || 1;
+        arHistorial.page = Number(meta.current_page) || arHistorial.page;
+        const info = document.getElementById('arh-paginacion-info');
+        if (info) info.textContent = meta.total
+            ? `Mostrando ${meta.from ?? 0}–${meta.to ?? 0} de ${meta.total} · Página ${arHistorial.page} de ${arHistorial.lastPage}`
+            : '';
+        const prev = document.getElementById('arh-prev'); if (prev) prev.disabled = arHistorial.page <= 1;
+        const next = document.getElementById('arh-next'); if (next) next.disabled = arHistorial.page >= arHistorial.lastPage;
+
+        if (!arHistorial.filas.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="ar-celda-info">No hay registros de cambios de rol con los filtros seleccionados.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = arHistorial.filas.map((h, i) => `<tr>
+                <td class="name" data-label="Usuario">${esc(h.usuario?.nombre)}<small class="ar-celda-sub">CI ${esc(h.usuario?.cedula)}</small></td>
+                <td data-label="Rol anterior">${rolHistorial(h.rol_anterior)}</td>
+                <td data-label="Nuevo rol">${rolHistorial(h.rol_nuevo)}</td>
+                <td data-label="Acción">${chipAccionHistorial(h)}</td>
+                <td data-label="Administrador responsable">${adminHistorial(h.admin)}</td>
+                <td data-label="Fecha y hora"><time datetime="${esc(h.fecha)}">${esc(h.fecha_texto || fechaHora(h.fecha))}</time></td>
+                <td data-label="Opciones"><button type="button" class="btn btn-ghost ar-ver-detalle" aria-label="Ver detalle del cambio de rol de ${esc(h.usuario?.nombre)}" onclick="verDetalleHistorial(${i})"><span aria-hidden="true">👁️</span> Ver detalle</button></td>
+            </tr>`).join('');
+    } catch (e) {
+        if (sec !== arHistorial.sec) return;
+        arHistorial.filas = [];
+        tbody.innerHTML = '<tr><td colspan="7" class="ar-celda-info">No se pudo cargar el historial.</td></tr>';
+        if (errEl) { errEl.hidden = false; errEl.textContent = e.message; }
+        toast(e.message, 'error');
+    } finally {
+        if (sec === arHistorial.sec) wrap?.setAttribute?.('aria-busy', 'false');
+    }
+}
+
+function verDetalleHistorial(i) {
+    const h = arHistorial.filas[i];
+    if (!h) return;
+    const body = document.getElementById('arh-detalle-body');
+    const fila = (k, v) => `<div class="ar-dato"><span>${esc(k)}</span><span>${v}</span></div>`;
+    if (body) body.innerHTML = fila('Usuario', esc(h.usuario?.nombre))
+        + fila('Cédula del usuario', esc(h.usuario?.cedula))
+        + fila('Acción', chipAccionHistorial(h))
+        + fila('Rol anterior', rolHistorial(h.rol_anterior))
+        + fila('Nuevo rol', rolHistorial(h.rol_nuevo))
+        + fila('Administrador responsable', adminHistorial(h.admin))
+        + (h.admin && h.admin.cedula !== null && h.admin.cedula !== undefined ? fila('Cédula del administrador', esc(h.admin.cedula)) : '')
+        + fila('Fecha y hora', esc(h.fecha_texto || fechaHora(h.fecha)))
+        + (h.ip ? fila('Dirección IP', esc(h.ip)) : '')
+        + fila('N.º de registro', esc(h.id));
+    arHistorial.origenFoco = document.activeElement || null;
+    openModal('modal-historial-detalle');
+    document.getElementById('arh-detalle-cerrar')?.focus?.();
+}
+
+function cerrarDetalleHistorial() {
+    const modal = document.getElementById('modal-historial-detalle');
+    const estabaAbierto = !!modal?.classList.contains('open');
+    closeModal('modal-historial-detalle');
+    const origen = arHistorial.origenFoco;
+    arHistorial.origenFoco = null;
+    if (estabaAbierto || origen) origen?.focus?.();
+}
+
+function teclaDetalleHistorial(e) {
+    if (e && e.key === 'Escape' && document.getElementById('modal-historial-detalle')?.classList.contains('open')) {
+        e.preventDefault?.();
+        cerrarDetalleHistorial();
+    }
+}
+document.addEventListener('keydown', teclaDetalleHistorial);
+// Clic fuera del modal: el manejador global ya quita .open; aquí se devuelve el foco.
+document.addEventListener('click', e => { if (e.target && e.target.id === 'modal-historial-detalle') cerrarDetalleHistorial(); });
+
 // ── Inicialización Asíncrona ──
 Promise.all([
     cargarKpis(),
     cargarPagosAdmin(),
     cargarTodosRoles(),
+    cargarResumenAsignaciones(),
+    cargarAsignaciones(),
+    cargarHistorialAsignaciones(),
     cargarCategorias(),
     cargarPublicaciones(),
     cargarPostulantes(),
@@ -852,7 +1348,27 @@ window.confirmarEliminarRol = confirmarEliminarRol;
 window.ejecutarEliminarRol = ejecutarEliminarRol;
 window.asignarRolFetch = asignarRolFetch;
 window.editarRolUsuario = editarRolUsuario;
+window.buscarUsuarioAsignar = buscarUsuarioAsignar;
+window.teclaUsuarioAsignar = teclaUsuarioAsignar;
+window.seleccionarUsuarioAsignar = seleccionarUsuarioAsignar;
+window.cambiarRolAsignar = cambiarRolAsignar;
+window.buscarTablaAsignaciones = buscarTablaAsignaciones;
+window.limpiarBusquedaAsignaciones = limpiarBusquedaAsignaciones;
+window.filtrarAsignaciones = filtrarAsignaciones;
+window.paginaAsignaciones = paginaAsignaciones;
+window.verRolFila = verRolFila;
+window.cambiarRolFila = cambiarRolFila;
+window.confirmarQuitarRol = confirmarQuitarRol;
+window.ejecutarQuitarRol = ejecutarQuitarRol;
 window.verUsuariosRol = verUsuariosRol;
+window.buscarHistorialAsignaciones = buscarHistorialAsignaciones;
+window.limpiarBusquedaHistorial = limpiarBusquedaHistorial;
+window.filtrarHistorial = filtrarHistorial;
+window.limpiarFiltrosHistorial = limpiarFiltrosHistorial;
+window.paginaHistorial = paginaHistorial;
+window.verDetalleHistorial = verDetalleHistorial;
+window.cerrarDetalleHistorial = cerrarDetalleHistorial;
+window.teclaDetalleHistorial = teclaDetalleHistorial;
 window.editarCategoria = editarCategoria;
 window.guardarCategoria = guardarCategoria;
 window.editarPublicacion = editarPublicacion;

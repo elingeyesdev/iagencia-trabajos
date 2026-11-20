@@ -54,6 +54,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/roles',             [AdminApiController::class, 'roles']);
         Route::post('/asignar-rol',      [AdminApiController::class, 'asignarRol']);
         Route::post('/quitar-rol',       [AdminApiController::class, 'quitarRol']);
+        // Asignar Rol: resumen, historial (solo lectura), listado paginado con filtros y capacidades derivadas de las rutas
+        Route::get('/asignaciones/resumen',   [AdminApiController::class, 'resumenAsignaciones']);
+        Route::get('/asignaciones/historial', [AdminApiController::class, 'historialAsignaciones']); // solo lectura
+        Route::get('/asignaciones',           [AdminApiController::class, 'asignaciones']);
+        Route::get('/roles/{id}/capacidades', [AdminApiController::class, 'capacidadesRol'])->whereNumber('id');
         Route::post('/roles',            [AdminApiController::class, 'storeRol']);
         Route::put('/roles/{id}',        [AdminApiController::class, 'updateRol']);
         Route::delete('/roles/{id}',     [AdminApiController::class, 'destroyRol']);

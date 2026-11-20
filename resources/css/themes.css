@@ -96,6 +96,15 @@ html[data-theme="light"] {
     --success: #17803F;
     --danger: #C9302C;
     --shadow-red: 0 4px 14px rgba(229, 72, 77, .12);
+
+    /* Asignar Rol (variables nuevas; su valor oscuro está en :root de admin-dashboard.css) */
+    --rw-ar-popover: var(--rw-surface);
+    --rw-ar-hover: var(--rw-surface-2);
+    --rw-ar-aviso-bg: var(--rw-yellow);
+    --rw-ar-aviso-ink: var(--rw-yellow-ink);
+    --rw-ar-error: var(--rw-red-ink);
+    --rw-ar-color-scheme: light;
+    --rw-ar-campo-bg: var(--rw-surface);
 }
 
 /* ── Estructura: fondo, encabezado, menú lateral, logo ── */

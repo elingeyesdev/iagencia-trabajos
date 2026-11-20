@@ -321,30 +321,151 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">🔗 Asignar Rol</div>
+                    <div class="ar-subtitulo">Gestiona los roles y permisos de los usuarios de RedWork.</div>
                     <div class="page-breadcrumb">Admin / <span>Acceso y Seguridad</span> / Asignar Rol</div>
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
-                <div class="table-wrap" style="padding:1.5rem;">
-                    <form onsubmit="asignarRolFetch(event)">
-                        @csrf
-                        <div class="form-group">
-                            <label class="form-label">Seleccionar Usuario</label>
-                            <select class="form-select">
-                                <option value="">— Seleccione usuario —</option>
-                                @foreach(\App\Models\User::orderBy('nombre')->get() as $u)
-                                <option value="{{ $u->cedula }}">{{ $u->nombre }} ({{ $u->email }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Seleccionar Rol</label>
-                            <select class="form-select"></select>
-                        </div>
-                        <button type="submit" class="btn btn-accent" style="width:100%;">✅ Asignar Rol</button>
-                    </form>
+
+            <!-- Resumen (GET /api/admin/asignaciones/resumen) -->
+            <div class="stats-grid ar-resumen">
+                <div class="stat-card" style="--bar-color:#FF5A5F;">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-label">Total usuarios</div>
+                    <div class="stat-value" id="ar-resumen-total">…</div>
+                </div>
+                <div class="stat-card" style="--bar-color:#4ADE80;">
+                    <div class="stat-icon">🔗</div>
+                    <div class="stat-label">Con rol</div>
+                    <div class="stat-value" id="ar-resumen-con">…</div>
+                </div>
+                <div class="stat-card" style="--bar-color:#2DD4BF;">
+                    <div class="stat-icon">🛡️</div>
+                    <div class="stat-label">Roles disponibles</div>
+                    <div class="stat-value" id="ar-resumen-roles">…</div>
+                </div>
+                <div class="stat-card" style="--bar-color:#F59E0B;">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-label">Sin rol</div>
+                    <div class="stat-value" id="ar-resumen-sin">…</div>
                 </div>
             </div>
+
+            <div class="ar-grid">
+                <!-- Izquierda: formulario de asignación -->
+                <div class="table-wrap ar-card" id="ar-col-form">
+                    <form id="ar-form" onsubmit="asignarRolFetch(event)" autocomplete="off">
+                        @csrf
+                        <div class="form-group ar-combo">
+                            <label class="form-label" for="ar-usuario-buscar">Seleccionar usuario</label>
+                            <div class="search-box">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="ar-usuario-buscar" placeholder="Busca por nombre, correo o rol..."
+                                       role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ar-usuario-lista"
+                                       oninput="buscarUsuarioAsignar(this.value)" onkeydown="teclaUsuarioAsignar(event)">
+                            </div>
+                            <ul class="ar-lista" id="ar-usuario-lista" role="listbox" aria-label="Resultados de usuarios" hidden></ul>
+                            <input type="hidden" id="ar-usuario-id" value="">
+                        </div>
+
+                        <div class="ar-usuario-info" id="ar-usuario-info" aria-live="polite">
+                            <div class="ar-vacio">Busca y selecciona un usuario para ver su información.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="ar-rol-select">Seleccionar rol</label>
+                            <select class="form-select" id="ar-rol-select" onchange="cambiarRolAsignar(this.value)">
+                                <option value="">— Seleccione rol —</option>
+                            </select>
+                        </div>
+                        <div class="ar-aviso" id="ar-aviso" role="status" hidden></div>
+                        <button type="submit" class="btn btn-accent ar-guardar" id="ar-guardar" disabled>Guardar +</button>
+                    </form>
+                </div>
+
+                <!-- Derecha: información y permisos del rol -->
+                <div class="ar-col-rol" id="ar-col-rol">
+                    <div class="table-wrap ar-card">
+                        <div class="ar-card-titulo">🛡️ Información del rol</div>
+                        <div id="ar-rol-info"><div class="ar-vacio">Selecciona un rol para ver su información.</div></div>
+                    </div>
+                    <div class="table-wrap ar-card">
+                        <div class="ar-card-titulo">🔐 Permisos del rol</div>
+                        <div id="ar-rol-permisos"><div class="ar-vacio">Selecciona un rol para ver a qué módulos da acceso.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usuarios y roles asignados (GET /api/admin/asignaciones) -->
+            <div class="ar-seccion-titulo">👥 Usuarios y roles asignados</div>
+            <div class="toolbar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="ar-tabla-buscar" placeholder="Buscar por nombre, correo o rol..." aria-label="Buscar usuarios" oninput="buscarTablaAsignaciones(this.value)">
+                    <button type="button" class="ar-limpiar" id="ar-tabla-limpiar" title="Limpiar búsqueda" aria-label="Limpiar búsqueda" onclick="limpiarBusquedaAsignaciones()" hidden>✕</button>
+                </div>
+                <select class="form-select ar-filtro" id="ar-filtro-rol" aria-label="Filtrar por rol" onchange="filtrarAsignaciones()">
+                    <option value="">Todos los roles</option>
+                </select>
+                <select class="form-select ar-filtro" id="ar-filtro-estado" aria-label="Filtrar por estado" onchange="filtrarAsignaciones()">
+                    <option value="">Todos los estados</option>
+                    <option value="1">Activo</option>
+                    <option value="0">Inactivo</option>
+                </select>
+                <select class="form-select ar-filtro" id="ar-filtro-conrol" aria-label="Filtrar por asignación" onchange="filtrarAsignaciones()">
+                    <option value="">Con y sin rol</option>
+                    <option value="si">Con rol</option>
+                    <option value="no">Sin rol</option>
+                </select>
+            </div>
+            <div class="table-wrap ar-tabla-wrap">
+                <table id="tabla-asignaciones">
+                    <thead><tr><th>Nombre</th><th>Correo</th><th>Rol actual</th><th>Estado</th><th>Fecha de asignación</th><th>Acciones</th></tr></thead>
+                    <tbody id="tbody-asignaciones"></tbody>
+                </table>
+            </div>
+            <div class="ar-paginacion">
+                <span id="ar-paginacion-info"></span>
+                <div style="display:flex;gap:.5rem;">
+                    <button class="btn btn-ghost" id="ar-prev" onclick="paginaAsignaciones(-1)">◀ Anterior</button>
+                    <button class="btn btn-ghost" id="ar-next" onclick="paginaAsignaciones(1)">Siguiente ▶</button>
+                </div>
+            </div>
+
+            <!-- Historial de asignaciones (GET /api/admin/asignaciones/historial, solo lectura) -->
+            <section class="ar-historial" id="ar-historial" aria-labelledby="ar-historial-titulo">
+                <div class="ar-seccion-titulo" id="ar-historial-titulo">🕘 Historial de Asignaciones</div>
+                <div class="ar-subtitulo ar-historial-sub">Consulta los cambios de roles realizados por los administradores de RedWork.</div>
+                <div class="toolbar ar-historial-filtros">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="arh-buscar" maxlength="100" placeholder="Buscar por usuario, cédula o administrador..." aria-label="Buscar en el historial" oninput="buscarHistorialAsignaciones(this.value)">
+                        <button type="button" class="ar-limpiar" id="arh-buscar-limpiar" title="Limpiar búsqueda" aria-label="Limpiar búsqueda del historial" onclick="limpiarBusquedaHistorial()" hidden>✕</button>
+                    </div>
+                    <select class="form-select ar-filtro" id="arh-accion" aria-label="Filtrar por tipo de acción" onchange="filtrarHistorial()">
+                        <option value="">Todas las acciones</option>
+                        <option value="asignacion">➕ Asignación</option>
+                        <option value="cambio">🔄 Cambio</option>
+                        <option value="retirada">➖ Retirada</option>
+                    </select>
+                    <label class="ar-fecha"><span>Fecha inicial</span><input type="date" class="form-input ar-input-fecha" id="arh-desde" aria-label="Fecha inicial" onchange="filtrarHistorial()"></label>
+                    <label class="ar-fecha"><span>Fecha final</span><input type="date" class="form-input ar-input-fecha" id="arh-hasta" aria-label="Fecha final" onchange="filtrarHistorial()"></label>
+                    <button type="button" class="btn btn-ghost" id="arh-limpiar-filtros" onclick="limpiarFiltrosHistorial()">Limpiar filtros</button>
+                </div>
+                <div class="ar-error ar-historial-error" id="arh-error" role="alert" hidden></div>
+                <div class="table-wrap ar-tabla-wrap" aria-busy="false" id="arh-tabla-wrap">
+                    <table id="tabla-historial-asignaciones">
+                        <thead><tr><th>Usuario</th><th>Rol anterior</th><th>Nuevo rol</th><th>Acción</th><th>Administrador responsable</th><th>Fecha y hora</th><th>Opciones</th></tr></thead>
+                        <tbody id="tbody-historial"></tbody>
+                    </table>
+                </div>
+                <div class="ar-paginacion">
+                    <span id="arh-paginacion-info" aria-live="polite"></span>
+                    <div style="display:flex;gap:.5rem;">
+                        <button class="btn btn-ghost" id="arh-prev" onclick="paginaHistorial(-1)">◀ Anterior</button>
+                        <button class="btn btn-ghost" id="arh-next" onclick="paginaHistorial(1)">Siguiente ▶</button>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <!-- PANEL: CATEGORÍAS -->
@@ -667,6 +788,20 @@
     </div>
 </div>
 
+<!-- DETALLE DEL HISTORIAL DE ASIGNACIONES (solo lectura) -->
+<div class="modal-overlay" id="modal-historial-detalle">
+    <div class="modal ar-modal-historial" role="dialog" aria-modal="true" aria-labelledby="arh-detalle-titulo" tabindex="-1">
+        <div class="modal-header">
+            <div class="modal-title" id="arh-detalle-titulo">👁️ Detalle del cambio de rol</div>
+            <button type="button" class="modal-close ar-modal-x" id="arh-detalle-x" title="Cerrar" aria-label="Cerrar detalle" onclick="cerrarDetalleHistorial()">✕</button>
+        </div>
+        <div id="arh-detalle-body"></div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" id="arh-detalle-cerrar" onclick="cerrarDetalleHistorial()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODALES DE PAGOS (SIMULADOS) -->
 <div class="modal-overlay" id="modal-pago-detalle">
     <div class="modal" style="max-width:720px;max-height:90vh;overflow-y:auto;">
@@ -741,6 +876,21 @@
     </div>
 </div>
 
+
+<div class="modal-overlay" id="modal-quitar-rol">
+    <div class="modal" style="max-width:400px;">
+        <div class="modal-header">
+            <div class="modal-title" style="color:#ff7070;">⚠️ Quitar rol</div>
+            <span class="modal-close" title="Cerrar" onclick="closeModal('modal-quitar-rol')">✕</span>
+        </div>
+        <p style="color:var(--text-soft);font-size:.88rem;margin-bottom:1rem;">¿Quitar el rol <strong id="quitar-rol-rol" style="color:white;"></strong> a <strong id="quitar-rol-nombre" style="color:white;"></strong>? El usuario quedará sin rol y sin acceso a sus módulos.</p>
+        <div id="quitar-rol-error" class="ar-error" role="alert"></div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('modal-quitar-rol')">Cancelar</button>
+            <button class="btn btn-red" id="quitar-rol-btn" onclick="ejecutarQuitarRol()">🗑️ Quitar rol</button>
+        </div>
+    </div>
+</div>
 
 <div class="modal-overlay" id="modal-rol">
     <div class="modal" style="max-width:400px;">

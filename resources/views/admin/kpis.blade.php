@@ -147,8 +147,6 @@
 </div>
 
 <script>
-    // Solo comportamiento del menú (mismo que en el inicio del administrador).
-    // En pantallas ≤ 900px el CSS muestra el menú con .mobile-open; en escritorio se usa .collapsed.
     function toggleSidebar() {
         if (window.matchMedia('(max-width: 900px)').matches) {
             document.getElementById('sidebar').classList.toggle('mobile-open');

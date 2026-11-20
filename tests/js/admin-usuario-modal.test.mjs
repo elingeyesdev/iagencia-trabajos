@@ -230,7 +230,7 @@ test('carga: el archivo no tiene import/export y se ejecuta sin errores; expone 
 });
 
 test('la vista: el botón «Guardar +» llama a abrirModalUsuario() y no a openModal directo', () => {
-    assert.match(VIEW, /onclick="abrirModalUsuario\(\)"[^>]*>\Guardar +</);
+    assert.match(VIEW, /onclick="abrirModalUsuario\(\)"[^>]*>\s*Guardar \+\s*</);
     assert.doesNotMatch(VIEW, /onclick="openModal\('modal-usuario'\)"/);
     assert.equal(TITULO_INICIAL, 'Nuevo Usuario');
 });
